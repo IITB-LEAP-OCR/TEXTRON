@@ -1,0 +1,5 @@
+doctr
+tesseract
+skimage
+pillow
+opencv-python

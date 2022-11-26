@@ -1,0 +1,3 @@
+[submodule "spear"]
+	path = spear
+	url = https://github.com/decile-team/spear.git
