@@ -1,33 +1,14 @@
 import enum
-import pandas as pd
 import numpy as np
-
-import os
 import pickle
-from skimage import io
-
-# from snorkel.labeling import labeling_function
-# from snorkel.labeling import PandasLFApplier
 
 from spear.spear.labeling import labeling_function, ABSTAIN, preprocessor
 from spear.spear.labeling import LFAnalysis, LFSet, PreLabels
 
-
-# input_dir = './data/images/'
-# results_dir = './data/results/'
-
-# IMG = 'docbank_test_page-0001.jpg'
-
-
-
-
 input_dir = './../temp_data/images/'
 results_dir = './../temp_data/results/'
-
-IMG = '10.tar_1701.04170.gz_TPNL_afterglow_evo_8_pro.jpg'
-IMG2 = '10.tar_1701.04170.gz_TPNL_afterglow_evo_8_ann.jpg'
-
-
+IMG = '2.tar_1801.00617.gz_idempotents_arxiv_4_pro.jpg'
+IMG2 = '2.tar_1801.00617.gz_idempotents_arxiv_4_ann.jpg'
 
 with open(results_dir + 'img_processing/convex_hull_results.pkl', 'rb') as f:
     val = pickle.load(f)
@@ -47,16 +28,16 @@ with open(results_dir + 'tesseract/pixels.pkl', 'rb') as f:
 with open(results_dir + 'labels/pixels.pkl', 'rb') as f:
     val6 = pickle.load(f)
 
-LABELS = val6[IMG2]
-
+with open(results_dir + 'img_processing/contour-based.pkl', 'rb') as f:
+    val7 = pickle.load(f)
 
 CHULL = val[IMG]
 EDGES = val2[IMG]
 PILLOW_EDGES = val3[IMG]
 DOCTR = val4[IMG]
 TESSERACT = val5[IMG]
-
-
+LABELS = val6[IMG2]
+CONTOUR = val7[IMG]
 
 class pixelLabels(enum.Enum):
     TEXT = 1
@@ -85,6 +66,10 @@ def get_doctr_info(x):
 @preprocessor()
 def get_tesseract_info(x):
     return TESSERACT[x[0]][x[1]]
+
+@preprocessor()
+def get_contour_info(x):
+    return CONTOUR[x[0]][x[1]]
 
 
 
@@ -149,7 +134,12 @@ def TESSERACT_LABEL(pixel):
     else:
         return ABSTAIN
 
-
+@labeling_function(label=pixelLabels.TEXT, pre=[get_contour_info], name="CONTOUR")
+def CONTOUR_LABEL(pixel):
+    if(pixel):
+        return pixelLabels.TEXT
+    else:
+        return ABSTAIN
 
 
 
@@ -169,16 +159,11 @@ if __name__ == "__main__":
             Y.append(LABELS[i][j])
     X = np.array(X)
     Y = np.array(Y)
-    print(Y)
 
-    LFS = [CONVEX_HULL_LABEL_PURE, CONVEX_HULL_LABEL_NOISE, EDGES_LABEL, EDGES_LABEL_REVERSE, PILLOW_EDGES_LABEL, DOCTR_LABEL, TESSERACT_LABEL]
-
+    LFS = [CONVEX_HULL_LABEL_PURE, CONVEX_HULL_LABEL_NOISE, EDGES_LABEL, EDGES_LABEL_REVERSE, PILLOW_EDGES_LABEL, DOCTR_LABEL, TESSERACT_LABEL, CONTOUR_LABEL]
     rules = LFSet("DETECTION_LF")
     rules.add_lf_list(LFS)
-
     R = np.zeros((X.shape[0],len(rules.get_lfs())))
-
-
     td_noisy_labels = PreLabels(name="TD",
                                data=X,
                                rules=rules,
@@ -188,12 +173,9 @@ if __name__ == "__main__":
 
     L,S = td_noisy_labels.get_labels()
 
-
-    analyse = td_noisy_labels.analyse_lfs(plot=True)
-
+    analyse = td_noisy_labels.analyse_lfs()
     result = analyse.head(16)
 
-    print("===== All Done =====")
     print(result)
     # display(result)
     td_noisy_labels.generate_pickle()
