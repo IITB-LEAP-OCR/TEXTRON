@@ -177,6 +177,6 @@ if __name__ == "__main__":
     result = analyse.head(16)
 
     print(result)
-    # display(result)
+    #display(result)
     td_noisy_labels.generate_pickle()
     td_noisy_labels.generate_json()
