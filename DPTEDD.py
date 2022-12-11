@@ -11,7 +11,7 @@ from skimage import io
 
 from spear.spear.labeling import labeling_function, ABSTAIN, preprocessor
 from spear.spear.labeling import LFAnalysis, LFSet, PreLabels
-
+from spear.spear.utils import get_data, get_classes
 
 # input_dir = './data/images/'
 # results_dir = './data/results/'
@@ -169,12 +169,13 @@ if __name__ == "__main__":
             Y.append(LABELS[i][j])
     X = np.array(X)
     Y = np.array(Y)
-    print(Y)
 
     LFS = [CONVEX_HULL_LABEL_PURE, CONVEX_HULL_LABEL_NOISE, EDGES_LABEL, EDGES_LABEL_REVERSE, PILLOW_EDGES_LABEL, DOCTR_LABEL, TESSERACT_LABEL]
 
     rules = LFSet("DETECTION_LF")
     rules.add_lf_list(LFS)
+
+    n_lfs = len(rules.get_lfs())
 
     R = np.zeros((X.shape[0],len(rules.get_lfs())))
 
@@ -198,3 +199,32 @@ if __name__ == "__main__":
     # display(result)
     td_noisy_labels.generate_pickle()
     td_noisy_labels.generate_json()
+
+
+
+
+    data_U = get_data(path = './TD_pickle.pkl', check_shapes=True)
+    #check_shapes being True(above), asserts for relative shapes of arrays in pickle file
+    print("Number of elements in data list: ", len(data_U))
+    print("Shape of feature matrix: ", data_U[0].shape)
+    print("Shape of labels matrix: ", data_U[1].shape)
+    print("Shape of continuous scores matrix : ", data_U[6].shape)
+    print("Total number of classes: ", data_U[9])
+
+    classes = get_classes(path = './TD_json.json')
+    print("Classes dictionary in json file(modified to have integer keys): ", classes)
+
+
+
+    from spear.spear.cage import Cage
+
+    cage = Cage(path_json = './TD_json.json', n_lfs = n_lfs)
+
+
+    probs = cage.fit_and_predict_proba(path_pkl = U_path_pkl, path_test = T_path_pkl, path_log = log_path_cage_1, \
+                                    qt = 0.9, qc = 0.85, metric_avg = ['binary'], n_epochs = 200, lr = 0.01)
+    labels = np.argmax(probs, 1)
+    print("probs shape: ", probs.shape)
+    print("labels shape: ",labels.shape)
+
+
