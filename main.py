@@ -7,6 +7,7 @@ from doctr.models import ocr_predictor
 
 from PIL import Image
 import pickle
+from tqdm import tqdm
 
 from spear.spear.labeling import labeling_function, ABSTAIN, preprocessor
 from spear.spear.labeling import LFAnalysis, LFSet, PreLabels
@@ -124,6 +125,14 @@ def PILLOW_EDGES_LABEL(pixel):
         return ABSTAIN
 
 
+@labeling_function(label = pixelLabels.NOT_TEXT, pre=[get_pillow_edges_info], name="PILLOW_EDGES_REVERSE")
+def PILLOW_EDGES_LABEL_REVERSE(pixel):
+    if(pixel):
+        return ABSTAIN
+    else:
+        return pixelLabels.NOT_TEXT
+
+
 @labeling_function(label=pixelLabels.TEXT, pre=[get_doctr_info], name="DOCTR")
 def DOCTR_LABEL(pixel):
     if(pixel):
@@ -163,7 +172,17 @@ def MASK_OBJECTS_LABEL(pixel):
 
 
 def main(img):
-    LFS = [ DOCTR_LABEL, TESSERACT_LABEL, CONTOUR_LABEL, MASK_HOLES_LABEL, CONVEX_HULL_LABEL_PURE]
+    
+    LFS = [ 
+        CONVEX_HULL_LABEL_PURE, 
+        CONVEX_HULL_LABEL_NOISE, 
+        EDGES_LABEL, 
+        EDGES_LABEL_REVERSE, 
+        PILLOW_EDGES_LABEL, 
+        PILLOW_EDGES_LABEL_REVERSE,
+        DOCTR_LABEL, TESSERACT_LABEL, CONTOUR_LABEL,
+        MASK_HOLES_LABEL, MASK_OBJECTS_LABEL
+    ]
 
     rules = LFSet("DETECTION_LF")
     rules.add_lf_list(LFS)
@@ -207,15 +226,29 @@ def main(img):
     return result
 
 
-def cage(X, gold_label):
+def cage(img, X, Y):
 
 
-    LFS = [ DOCTR_LABEL, TESSERACT_LABEL, CONTOUR_LABEL, MASK_HOLES_LABEL, CONVEX_HULL_LABEL_PURE]
+    # LFS = [ DOCTR_LABEL, TESSERACT_LABEL, CONTOUR_LABEL, CONVEX_HULL_LABEL_NOISE, PILLOW_EDGES_LABEL, MASK_HOLES_LABEL, CONVEX_HULL_LABEL_PURE]
+
+
+    LFS = [ 
+        # CONVEX_HULL_LABEL_PURE, 
+        CONVEX_HULL_LABEL_NOISE, 
+        # EDGES_LABEL, 
+        # EDGES_LABEL_REVERSE, 
+        PILLOW_EDGES_LABEL, 
+        # PILLOW_EDGES_LABEL_REVERSE,
+        DOCTR_LABEL, TESSERACT_LABEL, CONTOUR_LABEL,
+        MASK_HOLES_LABEL#, MASK_OBJECTS_LABEL
+    ]
 
     rules = LFSet("DETECTION_LF")
     rules.add_lf_list(LFS)
 
     n_lfs = len(rules.get_lfs())
+
+    gold_label = get_label(Y)
 
 
     path_json = 'sms_json.json'
@@ -225,11 +258,10 @@ def cage(X, gold_label):
     log_path_cage_1 = 'sms_log_1.txt' #cage is an algorithm, can be found below
     params_path = 'sms_params.pkl' #file path to store parameters of Cage, used below
 
-    X_train, X_test, y_train, y_test = train_test_split(X, gold_label ,random_state=104, test_size=0.2, shuffle=True)
 
     sms_noisy_labels = PreLabels(name="sms",
-                               data=X_test,
-                               gold_labels=y_test,
+                               data=X,
+                               gold_labels=gold_label,
                                rules=rules,
                                labels_enum=pixelLabels,
                                num_classes=2)
@@ -237,7 +269,7 @@ def cage(X, gold_label):
     sms_noisy_labels.generate_json(path_json) #generating json files once is enough
 
     sms_noisy_labels = PreLabels(name="sms",
-                                data=X_train,
+                                data=X,
                                 rules=rules,
                                 labels_enum=pixelLabels,
                                 num_classes=2) #note that we don't pass gold_labels here, for the unlabelled data
@@ -246,15 +278,7 @@ def cage(X, gold_label):
 
 
     data_U = get_data(path = U_path_pkl, check_shapes=True)
-    #check_shapes being True(above), asserts for relative shapes of arrays in pickle file
-    print("Number of elements in data list: ", len(data_U))
-    print("Shape of feature matrix: ", data_U[0].shape)
-    print("Shape of labels matrix: ", data_U[1].shape)
-    print("Shape of continuous scores matrix : ", data_U[6].shape)
-    print("Total number of classes: ", data_U[9])
-
     classes = get_classes(path = path_json)
-    print("Classes dictionary in json file(modified to have integer keys): ", classes)
 
     cage = Cage(path_json = path_json, n_lfs = n_lfs)
 
@@ -264,24 +288,35 @@ def cage(X, gold_label):
     probs = cage.fit_and_predict_proba(path_pkl = U_path_pkl, path_test = T_path_pkl, path_log = log_path_cage_1, \
                                     qt = 0.9, qc = 0.85, metric_avg = ['binary'], n_epochs = 200, lr = 0.01)
     labels = np.argmax(probs, 1)
-    print("probs shape: ", probs.shape)
-    print("labels shape: ",labels.shape)
-    print(labels)
-    with open('results.pkl', 'wb') as outp:  # Overwrites any existing file.
-        pickle.dump(labels, outp, pickle.HIGHEST_PROTOCOL)
+    x,y,_ = Y.shape
+    labels = labels.reshape(y,x)
+    io.imsave(RESULTS_DIR + img, labels)
 
 
 if __name__ == "__main__":
     dir_list = os.listdir(INPUT_DIR)
-    count = 0
-    df = pd.DataFrame()
-    for img in dir_list:
-        name = img[:len(img) - 7]
-        Y = io.imread(LABELS_DIR + name + 'ann.jpg')
+
+
+    ### CAGE Execution
+    for img in tqdm(dir_list):
+        # if(img == '100.tar_1705.04261.gz_main_11_ori_pro.jpg'):
+        name = img[:len(img) - 11]
+        Y = io.imread(LABELS_DIR + name + 'ann_pro.jpg')
         imgfile = INPUT_DIR + img
         lf = Labeling(imgfile=imgfile, model=MODEL)
-        result = main(img)
-        df = df.append(result)
+        cage(img, lf.pixels, Y)
 
-    df.to_csv("results_only_some.csv",index=False)
+
+    ### SPEAR EXECUTION
+    # df = pd.DataFrame()
+    # for img in dir_list:
+    #     if(img == '100.tar_1705.04261.gz_main_11_ori_pro.jpg'):
+    #         name = img[:len(img) - 11]
+    #         Y = io.imread(LABELS_DIR + name + 'ann_pro.jpg')
+    #         imgfile = INPUT_DIR + img
+    #         lf = Labeling(imgfile=imgfile, model=MODEL)
+    #         result = main(img)
+    #         df = df.append(result)
+
+    # df.to_csv("results_only_some.csv",index=False)
 

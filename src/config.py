@@ -1,10 +1,10 @@
 import os
 
-DATA_DIR    = './../temp_data/'
+DATA_DIR    = './../docbank_processed/processed_data/'
 
-INPUT_DIR   = os.path.join(DATA_DIR, 'images/')
-LABELS_DIR  = os.path.join(DATA_DIR, 'labels/')
-RESULTS_DIR = os.path.join(DATA_DIR, 'results/')
+INPUT_DIR   = os.path.join(DATA_DIR, 'spear_ori_black/')
+LABELS_DIR  = os.path.join(DATA_DIR, 'spear_ann/')
+RESULTS_DIR = os.path.join(DATA_DIR, 'cage_results/')
 
 LUMINOSITY = 1.0
 
