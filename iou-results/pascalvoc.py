@@ -322,20 +322,20 @@ if len(errors) != 0:
     [print(e) for e in errors]
     sys.exit()
 
-# # Check if path to save results already exists and is not empty
+# # Check if path to save iou-results already exists and is not empty
 # if os.path.isdir(savePath) and os.listdir(savePath):
 #     key_pressed = ''
 #     while key_pressed.upper() not in ['Y', 'N']:
-#         print(f'Folder {savePath} already exists and may contain important results.\n')
+#         print(f'Folder {savePath} already exists and may contain important iou-results.\n')
 #         print(f'Enter \'Y\' to continue. WARNING: THIS WILL REMOVE ALL THE CONTENTS OF THE FOLDER!')
-#         print(f'Or enter \'N\' to abort and choose another folder to save the results.')
+#         print(f'Or enter \'N\' to abort and choose another folder to save the iou-results.')
 #         key_pressed = input('')
 
 #     if key_pressed.upper() == 'N':
 #         print('Process canceled')
 #         sys.exit()
 
-# Clear folder and save results
+# Clear folder and save iou-results
 shutil.rmtree(savePath, ignore_errors=True)
 os.makedirs(savePath)
 # Show plot during execution
@@ -382,7 +382,7 @@ detections = evaluator.PlotPrecisionRecallCurve(
     savePath=savePath,
     showGraphic=showPlot)
 
-f = open(os.path.join(savePath, 'results.txt'), 'w')
+f = open(os.path.join(savePath, 'iou-results.txt'), 'w')
 f.write('Object Detection Metrics\n')
 f.write('https://github.com/rafaelpadilla/Object-Detection-Metrics\n\n\n')
 f.write('Average Precision (AP), Precision and Recall per class:')
