@@ -1,5 +1,7 @@
-doctr
-tesseract
-skimage
-pillow
-opencv-python
+python-doctr==0.6.0
+pytesseract==0.3.10
+scikit-image==0.19.3
+pillow==9.3.0
+opencv-python==4.6.0.66
+pandas==1.5.2
+python-doctr[torch]
