@@ -126,11 +126,12 @@ def get_contour_labels(image):
         y = b[1]
         w = b[2]
         h = b[3]
-        cv2.rectangle(final_img,(x,y), (x+w,y+h), (255, 255, 255), cv2.FILLED)
+        cv2.rectangle(final_img,(x,y), (x+w,y+h), (255, 255, 255),3)
 
     final_img = ~final_img
     final_img = binarize_image(final_img)
     final_img = final_img*1
+    io.imsave("contour.jpg",image)
     return final_img
 
 
@@ -150,6 +151,10 @@ def get_doctr_labels(model, imgfile, image):
     result = model(doc)
     dim = tuple(reversed(result.pages[0].dimensions))
     values = []
+    image = binarize_image(image)
+    image = 0*image
+    image = invert(image)
+    image = np.ascontiguousarray(image, dtype=np.uint8)
     for block in result.pages[0].blocks:
         for line in block.lines:
             for word in line.words:
@@ -157,10 +162,10 @@ def get_doctr_labels(model, imgfile, image):
                 a = list(a*b for a,b in zip(geo[0],dim))
                 b = list(a*b for a,b in zip(geo[1],dim))
                 values.append(a+b)
-                cv2.rectangle(image, (int(a[0]), int(a[1])), (int(b[0]), int(b[1])), (0, 0, 0), -1)
-    image = binarize_image(image)
-    image = image*1
-    
+                cv2.rectangle(image, (int(a[0]), int(a[1])), (int(b[0]), int(b[1])), (0, 0, 0),3)
+#     image = binarize_image(image)
+#     image = image*1
+    io.imsave("doctr.jpg",image)
     return image
 
 
@@ -176,15 +181,20 @@ def get_tesseract_labels(image):
     """
     # print("TESSERACT LABELS")
     d = image_to_data(image, output_type=Output.DICT)
+    image = binarize_image(image)
+    image = 0*image
+    image = invert(image)
+    image = np.ascontiguousarray(image, dtype=np.uint8)
     for i in range(len(d['level'])):
         (x, y, w, h) = (d['left'][i], d['top'][i], d['width'][i], d['height'][i])
         (x, y, w, h) = (int(x), int(y), int(w), int(h))
-        if(x==0 and y==0):
-            continue
-        else:
-            cv2.rectangle(image, (x, y), (x + w, y + h), (0, 0, 0), -1)
-    image = binarize_image(image)
-    image = image*1
+        # if(x==0 and y==0):
+        #     continue
+        # else:
+        cv2.rectangle(image, (x, y), (x + w, y + h), (0, 0, 0),3)
+#     image = binarize_image(image)
+#     image = image*1
+    io.imsave("tesseract.jpg",image)    
     return image
 
 
