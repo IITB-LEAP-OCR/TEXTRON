@@ -228,19 +228,15 @@ def main(img):
 
 def cage(img, X, Y):
 
-
-    # LFS = [ DOCTR_LABEL, TESSERACT_LABEL, CONTOUR_LABEL, CONVEX_HULL_LABEL_NOISE, PILLOW_EDGES_LABEL, MASK_HOLES_LABEL, CONVEX_HULL_LABEL_PURE]
-
-
     LFS = [ 
-        # CONVEX_HULL_LABEL_PURE, 
-        # CONVEX_HULL_LABEL_NOISE, 
-        # EDGES_LABEL, 
-        # EDGES_LABEL_REVERSE, 
-        # PILLOW_EDGES_LABEL, 
-        # PILLOW_EDGES_LABEL_REVERSE,
+        CONVEX_HULL_LABEL_PURE, 
+        CONVEX_HULL_LABEL_NOISE, 
+        EDGES_LABEL, 
+        EDGES_LABEL_REVERSE, 
+        PILLOW_EDGES_LABEL, 
+        PILLOW_EDGES_LABEL_REVERSE,
         DOCTR_LABEL, TESSERACT_LABEL, CONTOUR_LABEL,
-        # MASK_HOLES_LABEL#, MASK_OBJECTS_LABEL
+        MASK_HOLES_LABEL, MASK_OBJECTS_LABEL
     ]
 
     rules = LFSet("DETECTION_LF")
@@ -299,7 +295,7 @@ if __name__ == "__main__":
 
     ### CAGE Execution
     for img in tqdm(dir_list):
-        if not os.path.isfile(RESULTS_DIR + img):
+        if os.path.isfile(RESULTS_DIR + img):
             name = img[:len(img) - 11]
             Y = io.imread(LABELS_DIR + name + 'ann_pro.jpg')
             imgfile = INPUT_DIR + img
