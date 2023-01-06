@@ -120,7 +120,7 @@ def get_contour_labels(image):
             #cv2.rectangle(origimage,(x,y), (x+w,y+h), (0,0,0), cv2.FILLED)
             bboxes.append([x, y, w, h])
 
-    final_img = np.zeros((1024, 1024, 3), dtype = np.uint8)
+    final_img = np.zeros((image.shape), dtype = np.uint8)
     for b in bboxes:
         x = b[0]
         y = b[1]
@@ -131,7 +131,6 @@ def get_contour_labels(image):
     final_img = ~final_img
     final_img = binarize_image(final_img)
     final_img = final_img*1
-    io.imsave("contour.jpg",image)
     return final_img
 
 
@@ -163,9 +162,6 @@ def get_doctr_labels(model, imgfile, image):
                 b = list(a*b for a,b in zip(geo[1],dim))
                 values.append(a+b)
                 cv2.rectangle(image, (int(a[0]), int(a[1])), (int(b[0]), int(b[1])), (0, 0, 0),-1)
-#     image = binarize_image(image)
-#     image = image*1
-    io.imsave("doctr.jpg",image)
     return image
 
 
@@ -192,9 +188,6 @@ def get_tesseract_labels(image):
         #     continue
         # else:
         cv2.rectangle(image, (x, y), (x + w, y + h), (0, 0, 0),-1)
-#     image = binarize_image(image)
-#     image = image*1
-    io.imsave("tesseract.jpg",image)    
     return image
 
 

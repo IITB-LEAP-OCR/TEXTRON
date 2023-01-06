@@ -228,6 +228,18 @@ def main(img):
 
 def cage(img, X, Y):
 
+    # 1. CONVEX_HULL_LABEL_PURE, 
+    # 2. CONVEX_HULL_LABEL_NOISE, 
+    # 3. EDGES_LABEL, 
+    # 4. EDGES_LABEL_REVERSE, 
+    # 5. PILLOW_EDGES_LABEL, 
+    # 6. PILLOW_EDGES_LABEL_REVERSE,
+    # 7. DOCTR_LABEL,
+    # 8. TESSERACT_LABEL,
+    # 9. CONTOUR_LABEL,
+    # 10. MASK_HOLES_LABEL,
+    # 11. MASK_OBJECTS_LABEL
+
     LFS = [ 
         CONVEX_HULL_LABEL_PURE, 
         CONVEX_HULL_LABEL_NOISE, 
@@ -235,8 +247,11 @@ def cage(img, X, Y):
         EDGES_LABEL_REVERSE, 
         PILLOW_EDGES_LABEL, 
         PILLOW_EDGES_LABEL_REVERSE,
-        DOCTR_LABEL, TESSERACT_LABEL, CONTOUR_LABEL,
-        MASK_HOLES_LABEL, MASK_OBJECTS_LABEL
+        DOCTR_LABEL,
+        TESSERACT_LABEL,
+        CONTOUR_LABEL,
+        MASK_HOLES_LABEL,
+        MASK_OBJECTS_LABEL
     ]
 
     rules = LFSet("DETECTION_LF")
@@ -279,23 +294,24 @@ def cage(img, X, Y):
     cage = Cage(path_json = path_json, n_lfs = n_lfs)
 
 
-    cage = Cage(path_json = path_json, n_lfs = n_lfs)
+    # cage = Cage(path_json = path_json, n_lfs = n_lfs)
 
     probs = cage.fit_and_predict_proba(path_pkl = U_path_pkl, path_test = T_path_pkl, path_log = log_path_cage_1, \
                                     qt = 0.9, qc = 0.85, metric_avg = ['binary'], n_epochs = 200, lr = 0.01)
     labels = np.argmax(probs, 1)
     x,y,_ = Y.shape
-    labels = labels.reshape(y,x)
+
+    labels = labels.reshape(x,y)
     io.imsave(RESULTS_DIR + img, labels)
 
 
 if __name__ == "__main__":
     dir_list = os.listdir(INPUT_DIR)
 
-
     ### CAGE Execution
     for img in tqdm(dir_list):
-        if os.path.isfile(RESULTS_DIR + img):
+        if not os.path.isfile(RESULTS_DIR + img):
+            print(img)
             name = img[:len(img) - 11]
             Y = io.imread(LABELS_DIR + name + 'ann_pro.jpg')
             imgfile = INPUT_DIR + img
