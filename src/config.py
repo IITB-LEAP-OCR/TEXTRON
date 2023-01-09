@@ -8,4 +8,6 @@ RESULTS_DIR = os.path.join(DATA_DIR, 'cage_results/')
 
 LUMINOSITY = 1.0
 
+WIDTH_THRESHOLD = 0.6
+HEIGHT_THRESHOLD = 0.6
 

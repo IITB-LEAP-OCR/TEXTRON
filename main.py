@@ -32,8 +32,8 @@ class Labeling:
         self.CHULL        = get_convex_hull(image)
         self.EDGES        = get_image_edges(image)
         self.PILLOW_EDGES = get_pillow_image_edges(image2)
-        self.CONTOUR      = get_contour_labels(image3)
-        self.DOCTR        = get_doctr_labels(model, self.imgfile, image)
+        self.CONTOUR      = get_contour_labels(image3, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
+        self.DOCTR        = get_doctr_labels(model, self.imgfile, image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
         self.TESSERACT    = get_tesseract_labels(image)
         self.MASK_HOLES   = get_mask_holes_labels(image)
         self.MASK_OBJECTS = get_mask_objects_labels(image, LUMINOSITY)
@@ -242,16 +242,16 @@ def cage(img, X, Y):
 
     LFS = [ 
         CONVEX_HULL_LABEL_PURE, 
-        CONVEX_HULL_LABEL_NOISE, 
-        EDGES_LABEL, 
-        EDGES_LABEL_REVERSE, 
-        PILLOW_EDGES_LABEL, 
-        PILLOW_EDGES_LABEL_REVERSE,
+        # CONVEX_HULL_LABEL_NOISE, 
+        # EDGES_LABEL, 
+        # EDGES_LABEL_REVERSE, 
+        # PILLOW_EDGES_LABEL, 
+        # PILLOW_EDGES_LABEL_REVERSE,
         DOCTR_LABEL,
-        TESSERACT_LABEL,
+        # TESSERACT_LABEL,
         CONTOUR_LABEL,
-        MASK_HOLES_LABEL,
-        MASK_OBJECTS_LABEL
+        # MASK_HOLES_LABEL,
+        # MASK_OBJECTS_LABEL
     ]
 
     rules = LFSet("DETECTION_LF")

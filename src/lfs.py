@@ -69,7 +69,7 @@ def get_pillow_image_edges(image):
     return edges
 
 
-def get_contour_labels(image):
+def get_contour_labels(image, width_threshold, height_threshold):
     """
     _summary_
 
@@ -124,8 +124,8 @@ def get_contour_labels(image):
     for b in bboxes:
         x = b[0]
         y = b[1]
-        w = b[2]
-        h = b[3]
+        w = int(b[2]*width_threshold)
+        h = int(b[3]*height_threshold)
         cv2.rectangle(final_img,(x,y), (x+w,y+h), (255, 255, 255),-1)
 
     final_img = ~final_img
@@ -134,7 +134,7 @@ def get_contour_labels(image):
     return final_img
 
 
-def get_doctr_labels(model, imgfile, image):
+def get_doctr_labels(model, imgfile, image, width_threshold, height_threshold):
     """
     _summary_
 
@@ -160,8 +160,10 @@ def get_doctr_labels(model, imgfile, image):
                 geo = word.geometry
                 a = list(a*b for a,b in zip(geo[0],dim))
                 b = list(a*b for a,b in zip(geo[1],dim))
+                w = (b[0] - a[0])*width_threshold
+                h = (b[1] - a[1])*height_threshold
                 values.append(a+b)
-                cv2.rectangle(image, (int(a[0]), int(a[1])), (int(b[0]), int(b[1])), (0, 0, 0),-1)
+                cv2.rectangle(image, (int(a[0]), int(a[1])), (int(a[0]+w), int(a[1]+h)), (0, 0, 0),-1)
     return image
 
 
