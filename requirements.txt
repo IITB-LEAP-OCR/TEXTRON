@@ -4,4 +4,5 @@ scikit-image==0.19.3
 pillow==9.3.0
 opencv-python==4.6.0.66
 pandas==1.5.2
+easyocr==1.6.2
 python-doctr[torch]

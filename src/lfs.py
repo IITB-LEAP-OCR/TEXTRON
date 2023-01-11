@@ -127,7 +127,7 @@ def get_contour_labels(image, width_threshold, height_threshold):
         w = int(b[2]*width_threshold)
         h = int(b[3]*height_threshold)
         cv2.rectangle(final_img,(x,y), (x+w,y+h), (255, 255, 255),-1)
-
+    io.imsave("contour.jpg",final_img)
     final_img = ~final_img
     final_img = binarize_image(final_img)
     final_img = final_img*1
@@ -145,7 +145,6 @@ def get_doctr_labels(model, imgfile, image, width_threshold, height_threshold):
     Returns:
         _type_: _description_
     """
-    # print("DOCTR LABELS")
     doc = DocumentFile.from_images(imgfile)
     result = model(doc)
     dim = tuple(reversed(result.pages[0].dimensions))
@@ -164,10 +163,11 @@ def get_doctr_labels(model, imgfile, image, width_threshold, height_threshold):
                 h = (b[1] - a[1])*height_threshold
                 values.append(a+b)
                 cv2.rectangle(image, (int(a[0]), int(a[1])), (int(a[0]+w), int(a[1]+h)), (0, 0, 0),-1)
+    io.imsave("doctr.jpg", image)
     return image
 
 
-def get_tesseract_labels(image):
+def get_tesseract_labels(image, width_threshold, height_threshold):
     """
     _summary_
 
@@ -184,12 +184,13 @@ def get_tesseract_labels(image):
     image = invert(image)
     image = np.ascontiguousarray(image, dtype=np.uint8)
     for i in range(len(d['level'])):
-        (x, y, w, h) = (d['left'][i], d['top'][i], d['width'][i], d['height'][i])
-        (x, y, w, h) = (int(x), int(y), int(w), int(h))
-        # if(x==0 and y==0):
-        #     continue
-        # else:
-        cv2.rectangle(image, (x, y), (x + w, y + h), (0, 0, 0),-1)
+        if d['level'][i]==5:
+            (x, y, w, h) = (d['left'][i], d['top'][i], d['width'][i], d['height'][i])
+            (x, y, w, h) = (int(x), int(y), int(w), int(h))
+            w = int(w*width_threshold)
+            h = int(h*height_threshold)
+            cv2.rectangle(image, (x, y), (x + w, y + h), (0, 0, 0),-1)
+    io.imsave("tesseract.jpg", image)
     return image
 
 
