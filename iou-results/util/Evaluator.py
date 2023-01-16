@@ -101,7 +101,7 @@ class Evaluator:
             det = {key: np.zeros(len(gts[key])) for key in gts}
             #print("det " + str(det))
 
-            #print("Evaluating class: %s (%d detections)" % (str(c), len(dects)))
+            print("Evaluating class: %s (%d detections)" % (str(c), len(dects)))
             
             # Loop through detections
             for d in range(len(dects)):
@@ -111,6 +111,7 @@ class Evaluator:
                 gt = gts[dects[d][0]] if dects[d][0] in gts else []
                 #print("gt " + str(gt))
                 iouMax = sys.float_info.min
+                #print(dects[d])
                 for j in range(len(gt)):
                     iou = Evaluator.iou(dects[d][3], gt[j][3])
                     #Find ground truth instance with max iou 

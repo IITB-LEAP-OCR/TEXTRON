@@ -8,6 +8,7 @@ from doctr.models import ocr_predictor
 from PIL import Image
 import pickle
 from tqdm import tqdm
+import subprocess 
 
 from spear.spear.labeling import labeling_function, ABSTAIN, preprocessor
 from spear.spear.labeling import LFAnalysis, LFSet, PreLabels
@@ -30,20 +31,18 @@ class Labeling:
         image2 = Image.open(imgfile)
         image3 = cv2.imread(imgfile)
         self.CHULL        = get_convex_hull(image)
-        self.EDGES        = get_image_edges(image)
-        self.PILLOW_EDGES = get_pillow_image_edges(image2)
+        self.EDGES        = get_image_edges(image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
+        self.PILLOW_EDGES = get_pillow_image_edges(image2, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
         self.CONTOUR      = get_contour_labels(image3, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
         self.DOCTR        = get_doctr_labels(model, self.imgfile, image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
         self.TESSERACT    = get_tesseract_labels(image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
         self.MASK_HOLES   = get_mask_holes_labels(image)
         self.MASK_OBJECTS = get_mask_objects_labels(image, LUMINOSITY)
+        self.SEGMENTATION = get_segmentation_labels(image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
         self.pixels = get_pixels(image)
         self.image = image
 
 
-# imgfile = INPUT_DIR + '10.tar_1701.04170.gz_TPNL_afterglow_evo_8_pro.jpg'
-# Y = io.imread(LABELS_DIR + '10.tar_1701.04170.gz_TPNL_afterglow_evo_8_ann.jpg')
-# lf = Labeling(imgfile=imgfile, model=MODEL)
 
 imgfile =  None
 Y = None
@@ -83,6 +82,10 @@ def get_mask_holes_info(x):
 @preprocessor()
 def get_mask_objects_info(x):
     return lf.MASK_OBJECTS[x[0]][x[1]]
+
+@preprocessor()
+def get_segmentation_info(x):
+    return lf.SEGMENTATION[x[0]][x[1]]
 
 
 
@@ -175,6 +178,13 @@ def MASK_OBJECTS_LABEL(pixel):
     else:
         return ABSTAIN
 
+@labeling_function(label=pixelLabels.TEXT, pre=[get_segmentation_info], name="SEGMENTATION")
+def SEGMENTATION_LABEL(pixel):
+    if(pixel):
+        return pixelLabels.TEXT
+    else:
+        return ABSTAIN
+
 
 
 def main(img):
@@ -187,7 +197,8 @@ def main(img):
         PILLOW_EDGES_LABEL, 
         PILLOW_EDGES_LABEL_REVERSE,
         DOCTR_LABEL, TESSERACT_LABEL, CONTOUR_LABEL,
-        MASK_HOLES_LABEL, MASK_OBJECTS_LABEL
+        MASK_HOLES_LABEL, MASK_OBJECTS_LABEL,
+        SEGMENTATION_LABEL
     ]
 
     rules = LFSet("DETECTION_LF")
@@ -243,6 +254,7 @@ def cage(name, X, Y):
     # 9. CONTOUR_LABEL,
     # 10. MASK_HOLES_LABEL,
     # 11. MASK_OBJECTS_LABEL
+    # 12. SEGMENTATION_LABEL
 
     LFS = [ 
         CONVEX_HULL_LABEL_PURE, 
@@ -256,7 +268,8 @@ def cage(name, X, Y):
         TESSERACT_LABEL,
         CONTOUR_LABEL,
         MASK_HOLES_LABEL,
-        MASK_OBJECTS_LABEL
+        MASK_OBJECTS_LABEL,
+        SEGMENTATION_LABEL
     ]
 
     rules = LFSet("DETECTION_LF")
@@ -317,13 +330,27 @@ def cage(name, X, Y):
         io.imsave(RESULTS_DIR + name + '_ori_pro.jpg', labels)
 
 
-def get_bboxes(file):
+def get_bboxes(file, imgfile, model):
+
+
 
     df = pd.read_csv(ORI_TXT_DIR+file+'.txt', delimiter='\t')
     if(IS_EXPERIMENT):
         img = cv2.imread(RESULTS_DIR+file+ str(EXPERIMENT_VALUE) +'_ori_pro.jpg')
     else:
         img = cv2.imread(RESULTS_DIR+file +'_ori_pro.jpg')
+
+
+    if(IS_DOCTR_AND == True):
+        image = io.imread(imgfile)
+        doctr = get_doctr_labels(model, imgfile, image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
+        img2 = binarize_image(img)
+        #img = np.logical_or(doctr, img2)
+        img = doctr * img2
+        #img = invert(img)
+        io.imsave("temp.jpg",img)
+        img = cv2.imread("temp.jpg")
+
     img = invert(img)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
@@ -358,17 +385,23 @@ def get_bboxes(file):
     # Draw a bounding box around all contours
     for c in contours:
         x, y, w, h = cv2.boundingRect(c)
+        w = int(w*(0.95/WIDTH_THRESHOLD))
+        h = int(h*(0.8/HEIGHT_THRESHOLD))
         # Make sure contour area is large enough
-        if (cv2.contourArea(c)) > 10:
+        if (cv2.contourArea(c)) > 25 and (cv2.contourArea(c) < 10000):
             bboxes.append(['text',1,x, y, w, h])
 
     final_img = cv2.imread(INPUT_DIR + name + '_ori_pro.jpg')
     for b in bboxes:
         x = b[2]
         y = b[3]
-        w = int(b[4]*1.6)
-        h = int(b[5]*1.6)
-        cv2.rectangle(final_img,(x,y), (x+w,y+h), (0, 255, 128),1)
+        w = int(b[4])
+        h = int(b[5])
+        if(x=='0' and y=='0'):
+            bboxes.remove(b)
+            continue
+        else:
+            cv2.rectangle(final_img,(x,y), (x+w,y+h), (0, 255, 128),1)
 
     
     df = pd.DataFrame(bboxes, columns = ['label', 'confidence', 'x0', 'y0', 'w', 'h'])
@@ -387,11 +420,11 @@ if __name__ == "__main__":
     for img in tqdm(dir_list):
         # if not os.path.isfile(RESULTS_DIR + img):
         name = img[:len(img) - 12]
-        Y = io.imread(LABELS_DIR + name + '_ann_pro.jpg')
+        Y = io.imread(INPUT_DIR + name + '_ori_pro.jpg')
         imgfile = INPUT_DIR + img
         lf = Labeling(imgfile=imgfile, model=MODEL)
         cage(name, lf.pixels, Y)
-        get_bboxes(name)
+        get_bboxes(name, imgfile, model=MODEL)
 
     ### SPEAR EXECUTION
     # df = pd.DataFrame()
@@ -406,3 +439,4 @@ if __name__ == "__main__":
 
     # df.to_csv("results_only_some.csv",index=False)
 
+    subprocess.run(["python","./iou-results/pascalvoc.py","-gt", '../' + GROUND_TRUTH_DIR, "-det", '../' + OUT_TXT_DIR])
