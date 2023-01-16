@@ -6,7 +6,8 @@ Returns:
 """
 import cv2
 import pickle
-from skimage import color
+from skimage import io, color
+from skimage.util import invert
 from skimage.filters import threshold_otsu
 import numpy as np
 
@@ -145,7 +146,7 @@ def get_boxes(image, width_threshold, height_threshold, type="single"):
     for c in contours:
         x, y, w, h = cv2.boundingRect(c)
         # Make sure contour area is large enough
-        if (cv2.contourArea(c)) > 20 and (cv2.contourArea(c) < 10000):
+        if (cv2.contourArea(c)) > 20 and (cv2.contourArea(c) < 1000):
             bboxes.append([x, y, w, h])
 
     final_img = np.zeros((image.shape), dtype = np.uint8)
@@ -159,3 +160,45 @@ def get_boxes(image, width_threshold, height_threshold, type="single"):
     final_img = binarize_image(final_img)
     final_img = final_img*1
     return final_img
+
+
+def save_image(img, width_threshold, height_threshold, final_img, name):
+
+
+    img = invert(img)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    # Convert the grayscale image to binary
+    ret, binary = cv2.threshold(gray, 100, 255, cv2.THRESH_OTSU)
+
+    # To detect object contours, we want a black background and a white foreground, so we invert the image (i.e. 255 - pixel value)
+    inverted_binary = ~binary
+
+    # Find the contours on the inverted binary image, and store them in a list
+    # Contours are drawn around white blobs. hierarchy variable contains info on the relationship between the contours
+    contours, hierarchy = cv2.findContours(inverted_binary,
+    cv2.RETR_TREE,
+    cv2.CHAIN_APPROX_SIMPLE)
+
+    bboxes = []
+    # Draw a bounding box around all contours
+    for c in contours:
+        x, y, w, h = cv2.boundingRect(c)
+        w = int(w*(0.95/width_threshold))
+        h = int(h*(0.8/height_threshold))
+        # Make sure contour area is large enough
+        if (cv2.contourArea(c)) > 25 and (cv2.contourArea(c) < 5000):
+            bboxes.append(['text',1,x, y, w, h])
+
+    for b in bboxes:
+        x = b[2]
+        y = b[3]
+        w = int(b[4])
+        h = int(b[5])
+        if(x=='0' and y=='0'):
+            bboxes.remove(b)
+            continue
+        else:
+            cv2.rectangle(final_img,(x,y), (x+w,y+h), (0, 255, 128),1)
+
+    io.imsave(name+'.jpg', final_img)
