@@ -241,7 +241,7 @@ def main(img):
     return result
 
 
-def cage(name, X, Y):
+def cage(file, name, X, Y):
 
     # 1. CONVEX_HULL_LABEL_PURE, 
     # 2. CONVEX_HULL_LABEL_NOISE, 
@@ -260,16 +260,16 @@ def cage(name, X, Y):
         CONVEX_HULL_LABEL_PURE, 
         CONVEX_HULL_LABEL_NOISE, 
         EDGES_LABEL, 
-        EDGES_LABEL_REVERSE, 
-        PILLOW_EDGES_LABEL, 
-        PILLOW_EDGES_LABEL_REVERSE,
+        # EDGES_LABEL_REVERSE, 
+        # PILLOW_EDGES_LABEL, 
+        # PILLOW_EDGES_LABEL_REVERSE,
         DOCTR_LABEL,
         DOCTR_LABEL2,
-        TESSERACT_LABEL,
+        # TESSERACT_LABEL,
         CONTOUR_LABEL,
-        MASK_HOLES_LABEL,
-        MASK_OBJECTS_LABEL,
-        SEGMENTATION_LABEL
+        # MASK_HOLES_LABEL,
+        # MASK_OBJECTS_LABEL,
+        # SEGMENTATION_LABEL
     ]
 
     rules = LFSet("DETECTION_LF")
@@ -315,31 +315,31 @@ def cage(name, X, Y):
     # cage = Cage(path_json = path_json, n_lfs = n_lfs)
 
     probs = cage.fit_and_predict_proba(path_pkl = U_path_pkl, path_test = T_path_pkl, path_log = log_path_cage_1, \
-                                    qt = 0.9, qc = 0.85, metric_avg = ['binary'], n_epochs = 50, lr = 0.01)
+                                    qt = 0.9, qc = 0.85, metric_avg = ['binary'], n_epochs = 100, lr = 0.01)
     labels = np.argmax(probs, 1)
     x,y,_ = Y.shape
 
     labels = labels.reshape(x,y)
-    if(IS_EXPERIMENT):
-        io.imsave(RESULTS_DIR + name + str(EXPERIMENT_VALUE) + '_ori_pro.jpg', labels)
-        os.remove(U_path_pkl)
-        os.remove(path_json)
-        os.remove(T_path_pkl)
-        os.remove(log_path_cage_1)
+    if(GROUND_TRUTH==True):
+        if(IS_EXPERIMENT):
+            io.imsave(RESULTS_DIR + name + str(EXPERIMENT_VALUE) + '_ori_pro.jpg', labels)
+        else:
+            io.imsave(RESULTS_DIR + name + '_ori_pro.jpg', labels)
     else:
-        io.imsave(RESULTS_DIR + name + '_ori_pro.jpg', labels)
+        io.imsave(RESULTS_DIR + file, labels)
 
 
-def get_bboxes(file, imgfile, model):
+def get_bboxes(file1,file, imgfile, model):
 
 
-
-    df = pd.read_csv(ORI_TXT_DIR+file+'.txt', delimiter='\t')
-    if(IS_EXPERIMENT):
-        img = cv2.imread(RESULTS_DIR+file+ str(EXPERIMENT_VALUE) +'_ori_pro.jpg')
+    if(GROUND_TRUTH == True):
+        # df = pd.read_csv(ORI_TXT_DIR+file+'.txt', delimiter='\t')
+        if(IS_EXPERIMENT):
+            img = cv2.imread(RESULTS_DIR+file+ str(EXPERIMENT_VALUE) +'_ori_pro.jpg')
+        else:
+            img = cv2.imread(RESULTS_DIR+file +'_ori_pro.jpg')
     else:
-        img = cv2.imread(RESULTS_DIR+file +'_ori_pro.jpg')
-
+        img = cv2.imread(RESULTS_DIR + file1)
 
     if(IS_DOCTR_AND == True):
         image = io.imread(imgfile)
@@ -386,12 +386,12 @@ def get_bboxes(file, imgfile, model):
     for c in contours:
         x, y, w, h = cv2.boundingRect(c)
         w = int(w*(0.95/WIDTH_THRESHOLD))
-        h = int(h*(0.8/HEIGHT_THRESHOLD))
+        h = int(h*(0.95/HEIGHT_THRESHOLD))
         # Make sure contour area is large enough
         if (cv2.contourArea(c)) > 25 and (cv2.contourArea(c) < 10000):
             bboxes.append(['text',1,x, y, w, h])
 
-    final_img = cv2.imread(INPUT_DIR + name + '_ori_pro.jpg')
+    final_img = cv2.imread(INPUT_DIR + file1)
     for b in bboxes:
         x = b[2]
         y = b[3]
@@ -403,14 +403,14 @@ def get_bboxes(file, imgfile, model):
         else:
             cv2.rectangle(final_img,(x,y), (x+w,y+h), (0, 255, 128),1)
 
-    
     df = pd.DataFrame(bboxes, columns = ['label', 'confidence', 'x0', 'y0', 'w', 'h'])
     if(IS_EXPERIMENT):
         io.imsave(PREDICTIONS_DIR + file + str(EXPERIMENT_VALUE) + '_pred.jpg', final_img)
         df.to_csv(OUT_TXT_DIR + file + str(EXPERIMENT_VALUE) + '.txt', sep=' ',index=False)
     else:
-        io.imsave(PREDICTIONS_DIR + file + '_pred.jpg', final_img)
-        df.to_csv(OUT_TXT_DIR + file + '.txt', sep=' ',index=False)
+        name = file1[:len(file1) - 4]
+        io.imsave(PREDICTIONS_DIR + name + '_pred.jpg', final_img)
+        df.to_csv(OUT_TXT_DIR + name + '.txt', sep=' ',index=False)
 
 
 if __name__ == "__main__":
@@ -420,23 +420,27 @@ if __name__ == "__main__":
     for img in tqdm(dir_list):
         # if not os.path.isfile(RESULTS_DIR + img):
         name = img[:len(img) - 12]
-        Y = io.imread(INPUT_DIR + name + '_ori_pro.jpg')
+        # Y = io.imread(INPUT_DIR + name + '_ori_pro.jpg')
+        Y = io.imread(INPUT_DIR + img)
         imgfile = INPUT_DIR + img
         lf = Labeling(imgfile=imgfile, model=MODEL)
-        cage(name, lf.pixels, Y)
-        get_bboxes(name, imgfile, model=MODEL)
 
-    ### SPEAR EXECUTION
-    # df = pd.DataFrame()
-    # for img in dir_list:
-    #     if(img == '100.tar_1705.04261.gz_main_11_ori_pro.jpg'):
-    #         name = img[:len(img) - 11]
-    #         Y = io.imread(LABELS_DIR + name + 'ann_pro.jpg')
-    #         imgfile = INPUT_DIR + img
-    #         lf = Labeling(imgfile=imgfile, model=MODEL)
-    #         result = main(img)
-    #         df = df.append(result)
-
-    # df.to_csv("results_only_some.csv",index=False)
+        cage(img, name, lf.pixels, Y)
+        get_bboxes(img, name, imgfile, model=MODEL)
 
     subprocess.run(["python","./iou-results/pascalvoc.py","-gt", '../' + GROUND_TRUTH_DIR, "-det", '../' + OUT_TXT_DIR])
+
+    ### SPEAR EXECUTION
+    df = pd.DataFrame()
+    for img in dir_list:
+        if(img == '100.tar_1705.04261.gz_main_11_ori_pro.jpg'):
+            name = img[:len(img) - 11]
+            Y = io.imread(LABELS_DIR + name + 'ann_pro.jpg')
+            imgfile = INPUT_DIR + img
+            lf = Labeling(imgfile=imgfile, model=MODEL)
+            result = main(img)
+            df = df.append(result)
+
+    df.to_csv("results_only_some.csv",index=False)
+
+    
