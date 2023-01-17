@@ -1,15 +1,15 @@
+from src.utils import binarize_image, pure_binarize, get_boxes
+
 import cv2
 import numpy as np
-
-from src.utils import binarize_image, pure_binarize, get_boxes
 
 from skimage import io, filters, morphology
 from skimage.util import invert
 from skimage.morphology import convex_hull_image
-from scipy import ndimage as ndi
 from skimage.feature import canny
-from PIL import ImageFilter
+from scipy import ndimage as ndi
 
+from PIL import ImageFilter
 from doctr.io import DocumentFile
 from pytesseract import Output, image_to_data
 
@@ -24,7 +24,6 @@ def get_convex_hull(image):
     Returns:
         _type_: _description_
     """
-    # print("Convex Hull LF")
     image = binarize_image(image)
 
     convex_hull_1 = convex_hull_image(image)
@@ -45,7 +44,6 @@ def get_image_edges(image, width_threshold, height_threshold):
     Returns:
         _type_: _description_
     """
-    # print("EDGES")
     image = binarize_image(image)
     image = invert(image)
     edges = filters.sobel(image)
@@ -65,7 +63,6 @@ def get_pillow_image_edges(image, width_threshold, height_threshold):
     Returns:
         _type_: _description_
     """
-    # print("PILLOW EDGES")
     image = image.convert("L")    # Converting Image to Gray
     edges = image.filter(ImageFilter.FIND_EDGES)
     edges = np.array(edges)
@@ -128,7 +125,6 @@ def get_doctr_labels(model, imgfile, image, width_threshold, height_threshold):
                 values.append(a+b)
                 cv2.rectangle(image, (int(a[0]), int(a[1])), (int(a[0]+w), int(a[1]+h)), (0, 0, 0),-1)
     image = pure_binarize(image)
-    io.imsave("doctr.jpg", image)
     return image
 
 
@@ -142,7 +138,6 @@ def get_tesseract_labels(image, width_threshold, height_threshold):
     Returns:
         _type_: _description_
     """
-    # print("TESSERACT LABELS")
     d = image_to_data(image, output_type=Output.DICT)
     image = binarize_image(image)
     image = 0*image
@@ -175,6 +170,15 @@ def get_mask_holes_labels(image):
     return mask
 
 def get_mask_objects_labels(image, luminosity):
+    """_summary_
+
+    Args:
+        image (_type_): _description_
+        luminosity (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     mask = binarize_image(image)
     mask = morphology.remove_small_objects(mask < luminosity)
     return mask

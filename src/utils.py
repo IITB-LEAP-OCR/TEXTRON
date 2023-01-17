@@ -6,10 +6,11 @@ Returns:
 """
 import cv2
 import pickle
+import numpy as np
+
 from skimage import io, color
 from skimage.util import invert
 from skimage.filters import threshold_otsu
-import numpy as np
 
 
 def get_pixels(image): 
@@ -108,7 +109,17 @@ def store_pickle(data, location):
 
 
 def get_boxes(image, width_threshold, height_threshold, type="single"):
+    """_summary_
 
+    Args:
+        image (_type_): _description_
+        width_threshold (_type_): _description_
+        height_threshold (_type_): _description_
+        type (str, optional): _description_. Defaults to "single".
+
+    Returns:
+        _type_: _description_
+    """
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     # Convert the grayscale image to binary
@@ -164,8 +175,15 @@ def get_boxes(image, width_threshold, height_threshold, type="single"):
 
 
 def save_image(img, width_threshold, height_threshold, final_img, name):
+    """_summary_
 
-
+    Args:
+        img (_type_): _description_
+        width_threshold (_type_): _description_
+        height_threshold (_type_): _description_
+        final_img (_type_): _description_
+        name (_type_): _description_
+    """
     img = invert(img)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
