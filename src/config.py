@@ -1,16 +1,18 @@
 import os
 
-DATA_DIR    = '../docbank_processed/'
+INPUT_DATA_DIR    = './../processed/'
+RESULTS_DATA_DIR  = './../results/'
+DATASET = 'docbank_100'
 
-INPUT_DIR       = os.path.join(DATA_DIR, 'processed_data/spear_ori_black/')
-LABELS_DIR      = os.path.join(DATA_DIR, 'processed_data/txt/')
-ORI_TXT_DIR     = os.path.join(DATA_DIR, 'processed_data/txt/')
+INPUT_IMG_DIR = os.path.join(INPUT_DATA_DIR, DATASET + '/images_resized/')
+ANN_IMG_DIR   = os.path.join(INPUT_DATA_DIR, DATASET + '/ann/')
+ORI_TXT_DIR   = os.path.join(INPUT_DATA_DIR, DATASET + '/txt/')
 
 
-RESULT_VALUE = "18"
-RESULTS_DIR     = os.path.join(DATA_DIR, 'cage_results/results' + RESULT_VALUE + '/')
-OUT_TXT_DIR     = os.path.join(DATA_DIR, "txt_outputs/txt" + RESULT_VALUE + '/')
-PREDICTIONS_DIR = os.path.join(DATA_DIR, "predictions/predictions" + RESULT_VALUE + '/')
+RESULT_VALUE =  3
+RESULTS_DIR     = os.path.join(RESULTS_DATA_DIR, 'cage/results' + str(RESULT_VALUE) + '/')
+OUT_TXT_DIR     = os.path.join(RESULTS_DATA_DIR, "txt/txt" + str(RESULT_VALUE) + '/')
+PREDICTIONS_DIR = os.path.join(RESULTS_DATA_DIR, "predictions/predictions" + str(RESULT_VALUE) + '/')
 
 if not os.path.exists(RESULTS_DIR):
    # Create a new directory because it does not exist
@@ -20,7 +22,7 @@ if not os.path.exists(RESULTS_DIR):
 
 
 GROUND_TRUTH = True
-GROUND_TRUTH_DIR = os.path.join(DATA_DIR, 'gt_cage_sample100/gt_cage')
+GROUND_TRUTH_DIR = os.path.join(INPUT_DATA_DIR,  DATASET + '/gt_cage_sample100/gt_cage')
 
 IS_DOCTR_AND = False
 
@@ -30,6 +32,6 @@ EXPERIMENT_VALUE = len(os.listdir(RESULTS_DIR)) + 1
 
 LUMINOSITY = 1.0
 
-WIDTH_THRESHOLD = 0.75
-HEIGHT_THRESHOLD = 0.75
+WIDTH_THRESHOLD = 0.9
+HEIGHT_THRESHOLD = 0.9
 

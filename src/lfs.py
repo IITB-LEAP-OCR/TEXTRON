@@ -50,7 +50,7 @@ def get_image_edges(image, width_threshold, height_threshold):
     edges = pure_binarize(edges)
     io.imsave("temp.jpg", edges)
     image = cv2.imread("temp.jpg")
-    return get_boxes(image, width_threshold, height_threshold, "single")
+    return get_boxes(image, width_threshold, height_threshold, "double")
 
 
 def get_pillow_image_edges(image, width_threshold, height_threshold):
@@ -69,7 +69,7 @@ def get_pillow_image_edges(image, width_threshold, height_threshold):
     edges = pure_binarize(edges)
     io.imsave("temp.jpg", edges)
     image = cv2.imread("temp.jpg")
-    return get_boxes(image, width_threshold, height_threshold, "single")
+    return get_boxes(image, width_threshold, height_threshold, "double")
 
 
 def get_segmentation_labels(image, width_threshold, height_threshold):
@@ -79,7 +79,7 @@ def get_segmentation_labels(image, width_threshold, height_threshold):
     image = pure_binarize(image)
     io.imsave("temp.jpg", image)
     image = cv2.imread("temp.jpg")
-    return get_boxes(image, width_threshold, height_threshold, "single")
+    return get_boxes(image, width_threshold, height_threshold, "double")
 
 
 def get_contour_labels(image, width_threshold, height_threshold):
@@ -150,7 +150,6 @@ def get_tesseract_labels(image, width_threshold, height_threshold):
             w = int(w*width_threshold)
             h = int(h*height_threshold)
             cv2.rectangle(image, (x, y), (x + w, y + h), (0, 0, 0),-1)
-    io.imsave("tesseract.jpg", image)
     return image
 
 

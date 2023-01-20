@@ -16,6 +16,9 @@ from spear.spear.labeling import LFSet, PreLabels
 from spear.spear.utils import get_data, get_classes
 from spear.spear.cage import Cage
 
+import warnings
+warnings.filterwarnings("ignore")
+
 
 imgfile =  None
 Y = None
@@ -30,10 +33,10 @@ class pixelLabels(enum.Enum):
 class Labeling:
 
     def __init__(self,imgfile, model) -> None:
-        self.imgfile = imgfile
-        image = io.imread(imgfile)
-        image2 = Image.open(imgfile)
-        image3 = cv2.imread(imgfile)
+        self.imgfile = INPUT_IMG_DIR + imgfile
+        image = io.imread(self.imgfile)
+        image2 = Image.open(self.imgfile)
+        image3 = cv2.imread(self.imgfile)
         self.CHULL        = get_convex_hull(image)
         self.EDGES        = get_image_edges(image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
         self.PILLOW_EDGES = get_pillow_image_edges(image2, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
@@ -239,30 +242,17 @@ def main(img):
     return result
 
 
-def cage(file, name, X, Y):
-
-    # 1. CONVEX_HULL_LABEL_PURE, 
-    # 2. CONVEX_HULL_LABEL_NOISE, 
-    # 3. EDGES_LABEL, 
-    # 4. EDGES_LABEL_REVERSE, 
-    # 5. PILLOW_EDGES_LABEL, 
-    # 6. PILLOW_EDGES_LABEL_REVERSE,
-    # 7. DOCTR_LABEL,
-    # 8. TESSERACT_LABEL,
-    # 9. CONTOUR_LABEL,
-    # 10. MASK_HOLES_LABEL,
-    # 11. MASK_OBJECTS_LABEL
-    # 12. SEGMENTATION_LABEL
+def cage(file, X):
 
     LFS = [ 
         CONVEX_HULL_LABEL_PURE, 
-        CONVEX_HULL_LABEL_NOISE, 
-        EDGES_LABEL, 
+        # CONVEX_HULL_LABEL_NOISE, 
+        # EDGES_LABEL, 
         # EDGES_LABEL_REVERSE, 
         # PILLOW_EDGES_LABEL, 
         # PILLOW_EDGES_LABEL_REVERSE,
         DOCTR_LABEL,
-        DOCTR_LABEL2,
+        # DOCTR_LABEL2,
         # TESSERACT_LABEL,
         CONTOUR_LABEL,
         # MASK_HOLES_LABEL,
@@ -275,6 +265,7 @@ def cage(file, name, X, Y):
 
     n_lfs = len(rules.get_lfs())
 
+    Y = io.imread(INPUT_IMG_DIR + file)
     gold_label = get_label(Y)
 
 
@@ -305,39 +296,27 @@ def cage(file, name, X, Y):
     cage = Cage(path_json = path_json, n_lfs = n_lfs)
 
     probs = cage.fit_and_predict_proba(path_pkl = U_path_pkl, path_test = T_path_pkl, path_log = log_path_cage_1, \
-                                    qt = 0.9, qc = 0.85, metric_avg = ['binary'], n_epochs = 100, lr = 0.01)
+                                    qt = 0.9, qc = 0.85, metric_avg = ['binary'], n_epochs = 50, lr = 0.01)
     labels = np.argmax(probs, 1)
     x,y,_ = Y.shape
 
     labels = labels.reshape(x,y)
-    if(GROUND_TRUTH==True):
-        if(IS_EXPERIMENT):
-            io.imsave(RESULTS_DIR + name + str(EXPERIMENT_VALUE) + '_ori_pro.jpg', labels)
-        else:
-            io.imsave(RESULTS_DIR + name + '_ori_pro.jpg', labels)
-    else:
-        io.imsave(RESULTS_DIR + file, labels)
+    io.imsave(RESULTS_DIR + file, labels)
 
 
-def get_bboxes(file1,file, imgfile, model):
+def get_bboxes(file):
 
 
-    if(GROUND_TRUTH == True):
-        # df = pd.read_csv(ORI_TXT_DIR+file+'.txt', delimiter='\t')
-        if(IS_EXPERIMENT):
-            img = cv2.imread(RESULTS_DIR+file+ str(EXPERIMENT_VALUE) +'_ori_pro.jpg')
-        else:
-            img = cv2.imread(RESULTS_DIR+file +'_ori_pro.jpg')
-    else:
-        img = cv2.imread(RESULTS_DIR + file1)
 
-    if(IS_DOCTR_AND == True):
-        image = io.imread(imgfile)
-        doctr = get_doctr_labels(model, imgfile, image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
-        img2 = binarize_image(img)
-        img = doctr * img2
-        io.imsave("temp.jpg",img)
-        img = cv2.imread("temp.jpg")
+    img = cv2.imread(RESULTS_DIR + file)
+
+    # if(IS_DOCTR_AND == True):
+    #     image = io.imread(imgfile)
+    #     doctr = get_doctr_labels(model, imgfile, image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
+    #     img2 = binarize_image(img)
+    #     img = doctr * img2
+    #     io.imsave("temp.jpg",img)
+    #     img = cv2.imread("temp.jpg")
 
     img = invert(img)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -347,6 +326,7 @@ def get_bboxes(file1,file, imgfile, model):
 
     # To detect object contours, we want a black background and a white foreground, so we invert the image (i.e. 255 - pixel value)
     inverted_binary = ~binary
+    width, height = inverted_binary.shape
 
     # Find the contours on the inverted binary image, and store them in a list
     # Contours are drawn around white blobs. hierarchy variable contains info on the relationship between the contours
@@ -355,64 +335,68 @@ def get_bboxes(file1,file, imgfile, model):
     cv2.CHAIN_APPROX_SIMPLE)
 
 
+    #This is inmtermediate contour image having red contours plotted along the letters
+    # with_contours_int = cv2.drawContours(inverted_binary, contours, -1,(0,0,255),2)
+
+    # #We again perform binarization of above image inorder to find contours again 
+    # gray_contour = cv2.cvtColor(with_contours_int, cv2.COLOR_BGR2GRAY)
+
+    # ret, binary_contour = cv2.threshold(gray_contour, 100, 255, 
+    # cv2.THRESH_OTSU)
+    # inverted_contour = ~binary_contour
+
+    # # We find contours again of this inverted binary map so that word boundaries are detected
+    # contours, hierarchy = cv2.findContours(inverted_contour,
+    # cv2.RETR_TREE,
+    # cv2.CHAIN_APPROX_SIMPLE)
+
+
     bboxes = []
     # Draw a bounding box around all contours
     for c in contours:
         x, y, w, h = cv2.boundingRect(c)
-        w = int(w*(0.95/WIDTH_THRESHOLD))
-        h = int(h*(0.95/HEIGHT_THRESHOLD))
+        w = int(w*(0.99/WIDTH_THRESHOLD))
+        h = int(h*(0.99/HEIGHT_THRESHOLD))
         # Make sure contour area is large enough
-        if (cv2.contourArea(c)) > 25 and (cv2.contourArea(c) < 10000):
+        if (cv2.contourArea(c)) > 25 and (h<(height/30)):
             bboxes.append(['text',1,x, y, w, h])
 
-    final_img = cv2.imread(INPUT_DIR + file1)
+    final_img = cv2.imread(INPUT_IMG_DIR + file)
     for b in bboxes:
         x = b[2]
         y = b[3]
         w = int(b[4])
         h = int(b[5])
-        if(x=='0' and y=='0'):
-            bboxes.remove(b)
-            continue
-        else:
-            cv2.rectangle(final_img,(x,y), (x+w,y+h), (0, 255, 128),1)
+        cv2.rectangle(final_img,(x,y), (x+w,y+h), (0, 255, 0),1)
 
-    df = pd.DataFrame(bboxes, columns = ['label', 'confidence', 'x0', 'y0', 'w', 'h'])
-    if(IS_EXPERIMENT):
-        io.imsave(PREDICTIONS_DIR + file + str(EXPERIMENT_VALUE) + '_pred.jpg', final_img)
-        df.to_csv(OUT_TXT_DIR + file + str(EXPERIMENT_VALUE) + '.txt', sep=' ',index=False)
-    else:
-        name = file1[:len(file1) - 4]
-        io.imsave(PREDICTIONS_DIR + name + '_pred.jpg', final_img)
-        df.to_csv(OUT_TXT_DIR + name + '.txt', sep=' ',index=False)
+    df = pd.DataFrame(bboxes, columns = ['label', 'confidence', 'X', 'Y', 'W', 'H'])
+    name = file[:len(file) - 4]
+    io.imsave(PREDICTIONS_DIR + name + '_pred.jpg', final_img)
+    df.to_csv(OUT_TXT_DIR + name + '.txt', sep=' ',index=False, header=False)
 
 
 if __name__ == "__main__":
-    dir_list = os.listdir(INPUT_DIR)
+    dir_list = os.listdir(INPUT_IMG_DIR)
 
     ### CAGE Execution
-    for img in tqdm(dir_list):
-        name = img[:len(img) - 12]
-        Y = io.imread(INPUT_DIR + img)
-        imgfile = INPUT_DIR + img
-        lf = Labeling(imgfile=imgfile, model=MODEL)
-
-        cage(img, name, lf.pixels, Y)
-        get_bboxes(img, name, imgfile, model=MODEL)
+    for img_file in tqdm(dir_list):
+        lf = Labeling(imgfile=img_file, model=MODEL)
+        cage(img_file, lf.pixels)
+        get_bboxes(img_file)
 
     subprocess.run(["python","./iou-results/pascalvoc.py","-gt", '../' + GROUND_TRUTH_DIR, "-det", '../' + OUT_TXT_DIR])
 
-    ### SPEAR EXECUTION
-    df = pd.DataFrame()
-    for img in dir_list:
-        if(img == '100.tar_1705.04261.gz_main_11_ori_pro.jpg'):
-            name = img[:len(img) - 11]
-            Y = io.imread(LABELS_DIR + name + 'ann_pro.jpg')
-            imgfile = INPUT_DIR + img
-            lf = Labeling(imgfile=imgfile, model=MODEL)
-            result = main(img)
-            df = df.append(result)
+    # ### SPEAR EXECUTION
+    # df = pd.DataFrame()
+    # for img in dir_list:
+    #     if(img == '100.tar_1705.04261.gz_main_11_ori_pro.jpg'):
+    #         name = img[:len(img) - 11]
+    #         Y = io.imread(ANN_IMG_DIR + name + 'ann_pro.jpg')
+    #         imgfile = INPUT_IMG_DIR + img
+    #         lf = Labeling(imgfile=imgfile, model=MODEL)
+    #         result = main(img)
+    #         df = df.append(result)
 
-    df.to_csv("results_only_some.csv",index=False)
+    # df.to_csv("results_only_some.csv",index=False)
 
     

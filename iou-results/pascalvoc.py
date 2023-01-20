@@ -147,7 +147,6 @@ def getBoundingBoxes(directory,
     # x, y represents the most top-left coordinates of the bounding box
     # x2, y2 represents the most bottom-right coordinates of the bounding box
     for f in files:
-        i = 0
         nameOfImage = f.replace(".txt", "")
         fh1 = open(f, "r")
         for line in fh1:
@@ -175,9 +174,6 @@ def getBoundingBoxes(directory,
                 if idClass not in allClasses:
                     allClasses.append(idClass)
             else:
-                if(i==0):
-                    i=1
-                    continue
                 # idClass = int(splitLine[0]) #class
                 idClass = (splitLine[0])  # class
                 confidence = float(splitLine[1])
