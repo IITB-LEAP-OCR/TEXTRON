@@ -211,6 +211,21 @@ def main(img):
 
     R = np.zeros((lf.pixels.shape[0],len(rules.get_lfs())))
 
+    
+
+    Y = io.imread(INPUT_IMG_DIR + img)
+    name = img[:len(img) - 8]
+    df = pd.read_csv(ORI_TXT_DIR+name+'.txt', delimiter=' ',
+                     names=["token", "x0", "y0", "x1", "y1", "R", "G", "B", "font name", "label"])
+
+    height, width, _ = Y.shape
+    for i in range(df.shape[0]):
+        x0, y0, x1, y1  = (df['x0'][i], df['y0'][i], df['x1'][i], df['y1'][i])
+        x0, y0, x1, y1 = (int(x0*width/1000), int(y0*height/1000), int(x1*width/1000), int(y1*height/1000))
+        w = int((x1-x0)*WIDTH_THRESHOLD)
+        h = int((y1-y0)*HEIGHT_THRESHOLD)
+        cv2.rectangle(Y, (x0, y0), (x0+w, y0+h), (0, 0, 0), cv2.FILLED)
+
     gold_label = get_label(Y)
 
     td_noisy_labels = PreLabels(name="TD",
@@ -266,6 +281,19 @@ def cage(file, X):
     n_lfs = len(rules.get_lfs())
 
     Y = io.imread(INPUT_IMG_DIR + file)
+    name = file[:len(file) - 8]
+    df = pd.read_csv(ORI_TXT_DIR+name+'.txt', delimiter=' ',
+                     names=["token", "x0", "y0", "x1", "y1", "R", "G", "B", "font name", "label"])
+
+    height, width, _ = Y.shape
+    for i in range(df.shape[0]):
+        x0, y0, x1, y1  = (df['x0'][i], df['y0'][i], df['x1'][i], df['y1'][i])
+        x0, y0, x1, y1 = (int(x0*width/1000), int(y0*height/1000), int(x1*width/1000), int(y1*height/1000))
+        w = int((x1-x0)*WIDTH_THRESHOLD)
+        h = int((y1-y0)*HEIGHT_THRESHOLD)
+        cv2.rectangle(Y, (x0, y0), (x0+w, y0+h), (0, 0, 0), cv2.FILLED)
+
+    
     gold_label = get_label(Y)
 
 
@@ -358,7 +386,7 @@ def get_bboxes(file):
         w = int(w*(0.99/WIDTH_THRESHOLD))
         h = int(h*(0.99/HEIGHT_THRESHOLD))
         # Make sure contour area is large enough
-        if (cv2.contourArea(c)) > 25 and (h<(height/30)):
+        if (cv2.contourArea(c)) > (width*height)/100000 and (h<(height/30)):
             bboxes.append(['text',1,x, y, w, h])
 
     final_img = cv2.imread(INPUT_IMG_DIR + file)
@@ -386,17 +414,13 @@ if __name__ == "__main__":
 
     subprocess.run(["python","./iou-results/pascalvoc.py","-gt", '../' + GROUND_TRUTH_DIR, "-det", '../' + OUT_TXT_DIR])
 
-    # ### SPEAR EXECUTION
-    # df = pd.DataFrame()
-    # for img in dir_list:
-    #     if(img == '100.tar_1705.04261.gz_main_11_ori_pro.jpg'):
-    #         name = img[:len(img) - 11]
-    #         Y = io.imread(ANN_IMG_DIR + name + 'ann_pro.jpg')
-    #         imgfile = INPUT_IMG_DIR + img
-    #         lf = Labeling(imgfile=imgfile, model=MODEL)
-    #         result = main(img)
-    #         df = df.append(result)
+    ### SPEAR EXECUTION
+    df = pd.DataFrame()
+    for img in dir_list:
+        lf = Labeling(imgfile=img, model=MODEL)
+        result = main(img)
+        df = df.append(result)
 
-    # df.to_csv("results_only_some.csv",index=False)
+    df.to_csv("results_only_some.csv",index=False)
 
     

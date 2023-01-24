@@ -1,4 +1,6 @@
 import os
+import torch
+torch.cuda.empty_cache()
 
 INPUT_DATA_DIR    = './../processed/'
 RESULTS_DATA_DIR  = './../results/'
