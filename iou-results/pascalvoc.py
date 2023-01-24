@@ -129,7 +129,8 @@ def getBoundingBoxes(directory,
                      coordType,
                      allBoundingBoxes=None,
                      allClasses=None,
-                     imgSize=(0, 0)):
+                     imgSize=(0, 0),
+                     isExpt2=False):
     """Read txt files containing bounding boxes (ground truth and detections)."""
     if allBoundingBoxes is None:
         allBoundingBoxes = BoundingBoxes()
@@ -155,12 +156,15 @@ def getBoundingBoxes(directory,
                 continue
             splitLine = line.split(" ")
             if isGT:
+                i = 0
+                if isExpt2:
+                    i = 1
                 # idClass = int(splitLine[0]) #class
                 idClass = (splitLine[0])  # class
-                x = float(splitLine[1])
-                y = float(splitLine[2])
-                w = float(splitLine[3])
-                h = float(splitLine[4])
+                x = float(splitLine[1 + i])
+                y = float(splitLine[2 + i])
+                w = float(splitLine[3 + i])
+                h = float(splitLine[4 + i])
                 bb = BoundingBox(nameOfImage,
                                  idClass,
                                  x,
@@ -228,6 +232,14 @@ parser.add_argument('-det',
                     default=os.path.join(currentPath, 'detections'),
                     metavar='',
                     help='folder containing your detected bounding boxes')
+parser.add_argument('-expt2',
+                    '--isExpt2',
+                    dest='isExpt2',
+                    type=bool,
+                    default=False,
+                    metavar='',
+                    help='Tesseract/Doctr as groundtruths')
+
 # Optional
 parser.add_argument('-t',
                     '--threshold',
@@ -285,6 +297,7 @@ errors = []
 # Validate formats
 gtFormat = ValidateFormats(args.gtFormat, '-gtformat', errors)
 detFormat = ValidateFormats(args.detFormat, '-detformat', errors)
+isExpt2 = args.isExpt2
 # Groundtruth folder
 if ValidateMandatoryArgs(args.gtFolder, '-gt/--gtfolder', errors):
     gtFolder = ValidatePaths(args.gtFolder, '-gt/--gtfolder', errors)
@@ -350,6 +363,7 @@ print('detFolder = %s' % detFolder)
 print('gtCoordType = %s' % gtCoordType)
 print('detCoordType = %s' % detCoordType)
 print('showPlot %s' % showPlot)
+print('isExpt2 %s' % isExpt2)
 print()
 
 # Get groundtruth boxes
@@ -357,7 +371,8 @@ allBoundingBoxes, allClasses = getBoundingBoxes(gtFolder,
                                                 True,
                                                 gtFormat,
                                                 gtCoordType,
-                                                imgSize=imgSize)
+                                                imgSize=imgSize,
+                                                isExpt2=isExpt2)
 # Get detected boxes
 allBoundingBoxes, allClasses = getBoundingBoxes(detFolder,
                                                 False,
@@ -365,7 +380,8 @@ allBoundingBoxes, allClasses = getBoundingBoxes(detFolder,
                                                 detCoordType,
                                                 allBoundingBoxes,
                                                 allClasses,
-                                                imgSize=imgSize)
+                                                imgSize=imgSize,
+                                                isExpt2=isExpt2)
 allClasses.sort()
 
 evaluator = Evaluator()
