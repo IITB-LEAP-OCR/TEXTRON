@@ -269,11 +269,13 @@ def cage(file, X):
         DOCTR_LABEL,
         # DOCTR_LABEL2,
         # TESSERACT_LABEL,
-        CONTOUR_LABEL,
+        # CONTOUR_LABEL,
         # MASK_HOLES_LABEL,
         # MASK_OBJECTS_LABEL,
         # SEGMENTATION_LABEL
     ]
+
+    prob_arr = np.array([0.85, 0.9])
 
     rules = LFSet("DETECTION_LF")
     rules.add_lf_list(LFS)
@@ -281,17 +283,32 @@ def cage(file, X):
     n_lfs = len(rules.get_lfs())
 
     Y = io.imread(INPUT_IMG_DIR + file)
-    name = file[:len(file) - 8]
-    df = pd.read_csv(ORI_TXT_DIR+name+'.txt', delimiter=' ',
-                     names=["token", "x0", "y0", "x1", "y1", "R", "G", "B", "font name", "label"])
-
     height, width, _ = Y.shape
-    for i in range(df.shape[0]):
-        x0, y0, x1, y1  = (df['x0'][i], df['y0'][i], df['x1'][i], df['y1'][i])
-        x0, y0, x1, y1 = (int(x0*width/1000), int(y0*height/1000), int(x1*width/1000), int(y1*height/1000))
-        w = int((x1-x0)*WIDTH_THRESHOLD)
-        h = int((y1-y0)*HEIGHT_THRESHOLD)
-        cv2.rectangle(Y, (x0, y0), (x0+w, y0+h), (0, 0, 0), cv2.FILLED)
+
+    if('docbank' in DATASET):
+        name = file[:len(file) - 8]
+        df = pd.read_csv(ORI_TXT_DIR+name+'.txt', delimiter=' ',
+                         names=["token", "x0", "y0", "x1", "y1", "R", "G", "B", "font name", "label"])
+
+        for i in range(df.shape[0]):
+            x0, y0, x1, y1  = (df['x0'][i], df['y0'][i], df['x1'][i], df['y1'][i])
+            x0, y0, x1, y1 = (int(x0*width/1000), int(y0*height/1000), int(x1*width/1000), int(y1*height/1000))
+            w = int((x1-x0)*WIDTH_THRESHOLD)
+            h = int((y1-y0)*HEIGHT_THRESHOLD)
+            cv2.rectangle(Y, (x0, y0), (x0+w, y0+h), (0, 0, 0), cv2.FILLED)
+
+    else:
+        name = file[:len(file) - 4]
+        df = pd.read_csv(ORI_TXT_DIR+name+'.txt', delimiter=' ',
+                        names=["label","confidence","x0","y0",'w','h'])   
+
+
+        for i in range(df.shape[0]):
+            x0, y0, w, h  = (df['x0'][i], df['y0'][i], df['w'][i], df['h'][i])
+            # x0, y0, x1, y1 = (int(x0*width/1000), int(y0*height/1000), int(x1*width/1000), int(y1*height/1000))
+            w = int(w*WIDTH_THRESHOLD)
+            h = int(h*HEIGHT_THRESHOLD)
+            cv2.rectangle(Y, (x0, y0), (x0+w, y0+h), (0, 0, 0), cv2.FILLED)
 
     
     gold_label = get_label(Y)
@@ -324,7 +341,7 @@ def cage(file, X):
     cage = Cage(path_json = path_json, n_lfs = n_lfs)
 
     probs = cage.fit_and_predict_proba(path_pkl = U_path_pkl, path_test = T_path_pkl, path_log = log_path_cage_1, \
-                                    qt = 0.9, qc = 0.85, metric_avg = ['binary'], n_epochs = 50, lr = 0.01)
+                                    qt = 0.9, qc = prob_arr, metric_avg = ['binary'], n_epochs = 50, lr = 0.01)
     labels = np.argmax(probs, 1)
     x,y,_ = Y.shape
 
@@ -383,11 +400,10 @@ def get_bboxes(file):
     # Draw a bounding box around all contours
     for c in contours:
         x, y, w, h = cv2.boundingRect(c)
-        w = int(w*(0.99/WIDTH_THRESHOLD))
-        h = int(h*(0.99/HEIGHT_THRESHOLD))
+        w = int(w*(1/WIDTH_THRESHOLD))
+        h = int(h*(1/HEIGHT_THRESHOLD))
         # Make sure contour area is large enough
-        if (cv2.contourArea(c)) > (width*height)/100000 and (h<(height/30)):
-            bboxes.append(['text',1,x, y, w, h])
+        bboxes.append(['text',1,x, y, w, h])
 
     final_img = cv2.imread(INPUT_IMG_DIR + file)
     for b in bboxes:
@@ -408,9 +424,12 @@ if __name__ == "__main__":
 
     ### CAGE Execution
     for img_file in tqdm(dir_list):
-        lf = Labeling(imgfile=img_file, model=MODEL)
-        cage(img_file, lf.pixels)
-        get_bboxes(img_file)
+        if not (os.path.exists(RESULTS_DIR + img_file)):
+            lf = Labeling(imgfile=img_file, model=MODEL)
+            cage(img_file, lf.pixels)
+            get_bboxes(img_file)
+        else:
+            print(img_file," exists")
 
     subprocess.run(["python","./iou-results/pascalvoc.py","-gt", '../' + GROUND_TRUTH_DIR, "-det", '../' + OUT_TXT_DIR])
 

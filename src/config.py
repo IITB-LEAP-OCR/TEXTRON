@@ -4,14 +4,14 @@ torch.cuda.empty_cache()
 
 INPUT_DATA_DIR    = './../processed/'
 RESULTS_DATA_DIR  = './../results/'
-DATASET = 'docbank_100'
+DATASET = 'malayalam_coco'
 
-INPUT_IMG_DIR = os.path.join(INPUT_DATA_DIR, DATASET + '/images_resized/')
+INPUT_IMG_DIR = os.path.join(INPUT_DATA_DIR, DATASET + '/images/')
 ANN_IMG_DIR   = os.path.join(INPUT_DATA_DIR, DATASET + '/ann/')
 ORI_TXT_DIR   = os.path.join(INPUT_DATA_DIR, DATASET + '/txt/')
 
 
-RESULT_VALUE =  3
+RESULT_VALUE =  6
 RESULTS_DIR     = os.path.join(RESULTS_DATA_DIR, 'cage/results' + str(RESULT_VALUE) + '/')
 OUT_TXT_DIR     = os.path.join(RESULTS_DATA_DIR, "txt/txt" + str(RESULT_VALUE) + '/')
 PREDICTIONS_DIR = os.path.join(RESULTS_DATA_DIR, "predictions/predictions" + str(RESULT_VALUE) + '/')
@@ -34,6 +34,6 @@ EXPERIMENT_VALUE = len(os.listdir(RESULTS_DIR)) + 1
 
 LUMINOSITY = 1.0
 
-WIDTH_THRESHOLD = 0.9
-HEIGHT_THRESHOLD = 0.9
+WIDTH_THRESHOLD = 0.8
+HEIGHT_THRESHOLD = 0.8
 

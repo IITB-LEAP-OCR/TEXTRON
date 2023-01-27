@@ -158,7 +158,7 @@ def get_boxes(image, width_threshold, height_threshold, type="single"):
     for c in contours:
         x, y, w, h = cv2.boundingRect(c)
         # Make sure contour area is large enough
-        if (cv2.contourArea(c) > 25):
+        if (cv2.contourArea(c)) > (width*height)/100000 and (h<(height/40)):
             bboxes.append([x, y, w, h])
 
     final_img = np.zeros((image.shape), dtype = np.uint8)
