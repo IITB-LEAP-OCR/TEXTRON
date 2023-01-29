@@ -269,13 +269,13 @@ def cage(file, X):
         DOCTR_LABEL,
         # DOCTR_LABEL2,
         # TESSERACT_LABEL,
-        # CONTOUR_LABEL,
+        CONTOUR_LABEL,
         # MASK_HOLES_LABEL,
         # MASK_OBJECTS_LABEL,
         # SEGMENTATION_LABEL
     ]
 
-    prob_arr = np.array([0.85, 0.9])
+    prob_arr = np.array([0.85, 0.9, 0.95])
 
     rules = LFSet("DETECTION_LF")
     rules.add_lf_list(LFS)
@@ -381,19 +381,16 @@ def get_bboxes(file):
 
 
     #This is inmtermediate contour image having red contours plotted along the letters
-    # with_contours_int = cv2.drawContours(inverted_binary, contours, -1,(0,0,255),2)
+    #with_contours_int = cv2.drawContours(inverted_binary, contours, -1,(0,0,255),3)
 
     # #We again perform binarization of above image inorder to find contours again 
-    # gray_contour = cv2.cvtColor(with_contours_int, cv2.COLOR_BGR2GRAY)
+    #gray_contour = cv2.cvtColor(with_contours_int, cv2.COLOR_BGR2GRAY)
 
-    # ret, binary_contour = cv2.threshold(gray_contour, 100, 255, 
-    # cv2.THRESH_OTSU)
-    # inverted_contour = ~binary_contour
+    #ret, binary_contour = cv2.threshold(with_contours_int, 100, 255, cv2.THRESH_OTSU)
+    #inverted_contour = ~binary_contour
 
-    # # We find contours again of this inverted binary map so that word boundaries are detected
-    # contours, hierarchy = cv2.findContours(inverted_contour,
-    # cv2.RETR_TREE,
-    # cv2.CHAIN_APPROX_SIMPLE)
+    # We find contours again of this inverted binary map so that word boundaries are detected
+    #contours, hierarchy = cv2.findContours(inverted_contour, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
 
     bboxes = []
@@ -403,7 +400,8 @@ def get_bboxes(file):
         w = int(w*(1/WIDTH_THRESHOLD))
         h = int(h*(1/HEIGHT_THRESHOLD))
         # Make sure contour area is large enough
-        bboxes.append(['text',1,x, y, w, h])
+        if cv2.contourArea(c) > 30:
+            bboxes.append(['text',1,x, y, w, h])
 
     final_img = cv2.imread(INPUT_IMG_DIR + file)
     for b in bboxes:
@@ -424,18 +422,15 @@ if __name__ == "__main__":
 
     ### CAGE Execution
     for img_file in tqdm(dir_list):
-        if not (os.path.exists(RESULTS_DIR + img_file)):
-            lf = Labeling(imgfile=img_file, model=MODEL)
-            cage(img_file, lf.pixels)
-            get_bboxes(img_file)
-        else:
-            print(img_file," exists")
+        lf = Labeling(imgfile=img_file, model=MODEL)
+        cage(img_file, lf.pixels)
+        get_bboxes(img_file)
 
     subprocess.run(["python","./iou-results/pascalvoc.py","-gt", '../' + GROUND_TRUTH_DIR, "-det", '../' + OUT_TXT_DIR])
 
     ### SPEAR EXECUTION
     df = pd.DataFrame()
-    for img in dir_list:
+    for img in tqdm(dir_list):
         lf = Labeling(imgfile=img, model=MODEL)
         result = main(img)
         df = df.append(result)

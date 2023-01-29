@@ -167,7 +167,13 @@ class Evaluator:
                 print("Total TP => " + str(np.sum(TP)))
                 #print("Total FP => " + str(np.sum(FP)))
                 print("Total Ground Truths => " + str(npos))
-                print("Recall => " + str(np.sum(TP)/npos))
+                rec = np.sum(TP)/npos
+                prec = np.sum(TP)/len(dects)
+                print("Recall => " + str(rec))
+                print("Precision => " + str(prec))
+                sum = rec + prec
+                f1 = 2 * prec * rec / sum
+                print("F1 Score => " + str(f1))
             print()
         return ret
 

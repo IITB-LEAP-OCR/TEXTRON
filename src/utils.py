@@ -108,14 +108,14 @@ def store_pickle(data, location):
 
 
 
-def get_boxes(image, width_threshold, height_threshold, type="single"):
+def get_boxes(image, width_threshold, height_threshold, type="double"):
     """_summary_
 
     Args:
         image (_type_): _description_
         width_threshold (_type_): _description_
         height_threshold (_type_): _description_
-        type (str, optional): _description_. Defaults to "single".
+        type (str, optional): _description_. Defaults to "double".
 
     Returns:
         _type_: _description_
@@ -139,7 +139,7 @@ def get_boxes(image, width_threshold, height_threshold, type="single"):
 
     if(type == "double"):
         #This is inmtermediate contour image having red contours plotted along the letters
-        with_contours_int = cv2.drawContours(image, contours, -1,(0,0,255),2)
+        with_contours_int = cv2.drawContours(image, contours, -1,(0,0,255),4)
 
         #We again perform binarization of above image inorder to find contours again 
         gray_contour = cv2.cvtColor(with_contours_int, cv2.COLOR_BGR2GRAY)
@@ -158,7 +158,7 @@ def get_boxes(image, width_threshold, height_threshold, type="single"):
     for c in contours:
         x, y, w, h = cv2.boundingRect(c)
         # Make sure contour area is large enough
-        if (cv2.contourArea(c)) > (width*height)/100000 and (h<(height/40)):
+        if (cv2.contourArea(c)) > (width*height)/100000 and h<(height/40) and (w < width/2):
             bboxes.append([x, y, w, h])
 
     final_img = np.zeros((image.shape), dtype = np.uint8)

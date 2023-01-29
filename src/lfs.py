@@ -142,6 +142,7 @@ def get_tesseract_labels(image, width_threshold, height_threshold):
     image = binarize_image(image)
     image = 0*image
     image = invert(image)
+    width, height = image.shape
     image = np.ascontiguousarray(image, dtype=np.uint8)
     for i in range(len(d['level'])):
         if d['level'][i]==5:
@@ -149,7 +150,8 @@ def get_tesseract_labels(image, width_threshold, height_threshold):
             (x, y, w, h) = (int(x), int(y), int(w), int(h))
             w = int(w*width_threshold)
             h = int(h*height_threshold)
-            cv2.rectangle(image, (x, y), (x + w, y + h), (0, 0, 0),-1)
+            if((h<(height/40)) and (w < width/15)):
+                cv2.rectangle(image, (x, y), (x + w, y + h), (0, 0, 0),-1)
     return image
 
 
