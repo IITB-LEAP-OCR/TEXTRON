@@ -2,6 +2,7 @@ from src.utils import binarize_image, pure_binarize, get_boxes
 
 import cv2
 import numpy as np
+import pandas as pd
 
 from skimage import io, filters, morphology
 from skimage.util import invert
@@ -124,6 +125,30 @@ def get_doctr_labels(model, imgfile, image, width_threshold, height_threshold):
                 h = (b[1] - a[1])*height_threshold
                 values.append(a+b)
                 cv2.rectangle(image, (int(a[0]), int(a[1])), (int(a[0]+w), int(a[1]+h)), (0, 0, 0),-1)
+    image = pure_binarize(image)
+    return image
+
+
+def get_existing_doctr_labels(ann_dir,imgfile, image, width_threshold, height_threshold):
+    """
+    _summary_
+
+    Args:
+        model (_type_): _description_
+        imgfile (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    image = binarize_image(image)
+    image = 0*image
+    image = invert(image)
+    image = np.ascontiguousarray(image, dtype=np.uint8)
+    df = pd.read_csv(ann_dir + imgfile[:-8] + '_ori.txt', sep=' ')
+    df['W'] = df['W'].apply(lambda x : int(x*width_threshold))
+    df['H'] = df['H'].apply(lambda x : int(x*height_threshold))
+    for _,a in df.iterrows():
+        cv2.rectangle(image, (int(a['X']), int(a['Y'])), (int(a['X']+a['W']), int(a['Y']+a['H'])), (0, 0, 0),-1)
     image = pure_binarize(image)
     return image
 

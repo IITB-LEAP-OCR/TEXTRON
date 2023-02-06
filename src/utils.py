@@ -139,7 +139,7 @@ def get_boxes(image, width_threshold, height_threshold, type="double"):
 
     if(type == "double"):
         #This is inmtermediate contour image having red contours plotted along the letters
-        with_contours_int = cv2.drawContours(image, contours, -1,(0,0,255),4)
+        with_contours_int = cv2.drawContours(image, contours, -1,(0,0,255),2)
 
         #We again perform binarization of above image inorder to find contours again 
         gray_contour = cv2.cvtColor(with_contours_int, cv2.COLOR_BGR2GRAY)
@@ -158,7 +158,12 @@ def get_boxes(image, width_threshold, height_threshold, type="double"):
     for c in contours:
         x, y, w, h = cv2.boundingRect(c)
         # Make sure contour area is large enough
-        if (cv2.contourArea(c)) > (width*height)/100000 and h<(height/40) and (w < width/2):
+        #For English DocBank use the below one
+        if (w < width/2):
+        # For multilingual
+        #if (cv2.contourArea(c)) > (width*height)/100000 and h<(height/4) and (w < width/2):
+        #for funsd
+        # if (cv2.contourArea(c)) > 30:
             bboxes.append([x, y, w, h])
 
     final_img = np.zeros((image.shape), dtype = np.uint8)
