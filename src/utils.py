@@ -108,7 +108,7 @@ def store_pickle(data, location):
 
 
 
-def get_boxes(image, width_threshold, height_threshold, type="double"):
+def get_boxes(image, width_threshold, height_threshold, thickness=4, type="double"):
     """_summary_
 
     Args:
@@ -139,7 +139,7 @@ def get_boxes(image, width_threshold, height_threshold, type="double"):
 
     if(type == "double"):
         #This is inmtermediate contour image having red contours plotted along the letters
-        with_contours_int = cv2.drawContours(image, contours, -1,(0,0,255),2)
+        with_contours_int = cv2.drawContours(image, contours, -1,(0,0,255),thickness)
 
         #We again perform binarization of above image inorder to find contours again 
         gray_contour = cv2.cvtColor(with_contours_int, cv2.COLOR_BGR2GRAY)

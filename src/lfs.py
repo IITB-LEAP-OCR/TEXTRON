@@ -83,7 +83,7 @@ def get_segmentation_labels(image, width_threshold, height_threshold):
     return get_boxes(image, width_threshold, height_threshold, "double")
 
 
-def get_contour_labels(image, width_threshold, height_threshold):
+def get_contour_labels(image, width_threshold, height_threshold, thickness):
     """
     _summary_
 
@@ -93,7 +93,20 @@ def get_contour_labels(image, width_threshold, height_threshold):
     Returns:
         _type_: _description_
     """
-    return get_boxes(image, width_threshold, height_threshold, "double")
+    return get_boxes(image, width_threshold, height_threshold, thickness, "double")
+
+
+def get_title_contour_labels(image, width_threshold, height_threshold, thickness):
+    """
+    _summary_
+
+    Args:
+        image (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    return get_boxes(image, width_threshold, height_threshold,thickness, "double")
 
 
 def get_doctr_labels(model, imgfile, image, width_threshold, height_threshold):
@@ -144,9 +157,9 @@ def get_existing_doctr_labels(ann_dir,imgfile, image, width_threshold, height_th
     image = 0*image
     image = invert(image)
     image = np.ascontiguousarray(image, dtype=np.uint8)
-    df = pd.read_csv(ann_dir + imgfile[:-8] + '_ori.txt', sep=' ')
-    df['W'] = df['W'].apply(lambda x : int(x*width_threshold))
-    df['H'] = df['H'].apply(lambda x : int(x*height_threshold))
+    df = pd.read_csv(ann_dir + imgfile[:-4] + '.txt', sep=' ', names = ['class','confidence','X','Y','W','H','label'])
+    df['W'] = df['W'].apply(lambda x : int(int(x)*width_threshold))
+    df['H'] = df['H'].apply(lambda x : int(int(x)*height_threshold))
     for _,a in df.iterrows():
         cv2.rectangle(image, (int(a['X']), int(a['Y'])), (int(a['X']+a['W']), int(a['Y']+a['H'])), (0, 0, 0),-1)
     image = pure_binarize(image)

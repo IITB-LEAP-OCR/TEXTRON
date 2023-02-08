@@ -36,18 +36,19 @@ class Labeling:
     def __init__(self,imgfile, model) -> None:
         self.imgfile = INPUT_IMG_DIR + imgfile
         image = io.imread(self.imgfile)
-        # image2 = Image.open(self.imgfile)
+        image2 = Image.open(self.imgfile)
         image3 = cv2.imread(self.imgfile)
         self.CHULL        = get_convex_hull(image)
-        # self.EDGES        = get_image_edges(image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
-        # self.PILLOW_EDGES = get_pillow_image_edges(image2, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
-        self.CONTOUR      = get_contour_labels(image3, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
-        # self.DOCTR        = get_doctr_labels(model, self.imgfile, image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
-        self.DOCTR        = get_existing_doctr_labels(ANN_DOCTR_DIR, imgfile, image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
-        # self.TESSERACT    = get_tesseract_labels(image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
-        # self.MASK_HOLES   = get_mask_holes_labels(image)
-        # self.MASK_OBJECTS = get_mask_objects_labels(image, LUMINOSITY)
-        # self.SEGMENTATION = get_segmentation_labels(image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
+        self.EDGES        = get_image_edges(image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
+        self.PILLOW_EDGES = get_pillow_image_edges(image2, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
+        self.CONTOUR      = get_contour_labels(image3, WIDTH_THRESHOLD, HEIGHT_THRESHOLD, THICKNESS)
+        self.TITLE_CONTOUR = get_title_contour_labels(image3, WIDTH_THRESHOLD, HEIGHT_THRESHOLD, 7)
+        self.DOCTR        = get_doctr_labels(model, self.imgfile, image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
+        # self.DOCTR        = get_existing_doctr_labels(ANN_DOCTR_DIR, imgfile, image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
+        self.TESSERACT    = get_tesseract_labels(image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
+        self.MASK_HOLES   = get_mask_holes_labels(image)
+        self.MASK_OBJECTS = get_mask_objects_labels(image, LUMINOSITY)
+        self.SEGMENTATION = get_segmentation_labels(image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
         self.pixels = get_pixels(image)
         self.image = image
 
@@ -78,6 +79,10 @@ def get_tesseract_info(x):
 @preprocessor()
 def get_contour_info(x):
     return lf.CONTOUR[x[0]][x[1]]
+
+@preprocessor()
+def get_title_contour_info(x):
+    return lf.TITLE_CONTOUR[x[0]][x[1]]
 
 @preprocessor()
 def get_mask_holes_info(x):
@@ -163,6 +168,13 @@ def TESSERACT_LABEL(pixel):
 
 @labeling_function(label=pixelLabels.TEXT, pre=[get_contour_info], name="CONTOUR")
 def CONTOUR_LABEL(pixel):
+    if(pixel):
+        return pixelLabels.TEXT
+    else:
+        return ABSTAIN
+
+@labeling_function(label=pixelLabels.TEXT, pre=[get_title_contour_info], name="CONTOUR_TITLE")
+def CONTOUR_TITLE_LABEL(pixel):
     if(pixel):
         return pixelLabels.TEXT
     else:
@@ -263,21 +275,22 @@ def cage(file, X):
 
     LFS = [ 
         CONVEX_HULL_LABEL_PURE, 
-        # CONVEX_HULL_LABEL_NOISE, 
-        # EDGES_LABEL, 
-        # EDGES_LABEL_REVERSE, 
+        CONVEX_HULL_LABEL_NOISE, 
+        EDGES_LABEL, 
+        EDGES_LABEL_REVERSE, 
         # PILLOW_EDGES_LABEL, 
         # PILLOW_EDGES_LABEL_REVERSE,
         DOCTR_LABEL,
         # DOCTR_LABEL2,
-        # TESSERACT_LABEL,
+        TESSERACT_LABEL,
         CONTOUR_LABEL,
-        # MASK_HOLES_LABEL,
-        # MASK_OBJECTS_LABEL,
-        # SEGMENTATION_LABEL
+        CONTOUR_TITLE_LABEL
+        MASK_HOLES_LABEL,
+        MASK_OBJECTS_LABEL,
+        SEGMENTATION_LABEL
     ]
 
-    prob_arr = np.array([0.85, 0.9, 0.95])
+    prob_arr = np.array([0.90, 0.95 ])
 
     rules = LFSet("DETECTION_LF")
     rules.add_lf_list(LFS)
@@ -287,8 +300,8 @@ def cage(file, X):
     Y = io.imread(INPUT_IMG_DIR + file)
     height, width, _ = Y.shape
 
-    if('docbank' in DATASET):
-        name = file[:len(file) - 8]
+    if('docbank' in DATASET) or 'testing_sample' in DATASET:
+        name = file[:len(file) - 4]
         df = pd.read_csv(ORI_TXT_DIR+name+'.txt', delimiter=' ',
                          names=["token", "x0", "y0", "x1", "y1", "R", "G", "B", "font name", "label"])
 
@@ -343,7 +356,7 @@ def cage(file, X):
     cage = Cage(path_json = path_json, n_lfs = n_lfs)
 
     probs = cage.fit_and_predict_proba(path_pkl = U_path_pkl, path_test = T_path_pkl, path_log = log_path_cage_1, \
-                                    qt = 0.9, qc = prob_arr, metric_avg = ['binary'], n_epochs = 50, lr = 0.01)
+                                    qt = prob_arr, qc = prob_arr, metric_avg = ['binary'], n_epochs = 50, lr = 0.01)
     labels = np.argmax(probs, 1)
     x,y,_ = Y.shape
 
@@ -424,10 +437,10 @@ if __name__ == "__main__":
 
     ### CAGE Execution
     for img_file in tqdm(dir_list):
-        if not (os.path.exists(RESULTS_DIR + img_file)):
-            lf = Labeling(imgfile=img_file, model=MODEL)
-            cage(img_file, lf.pixels)
-            get_bboxes(img_file)
+        # if not (os.path.exists(RESULTS_DIR + img_file)):
+        lf = Labeling(imgfile=img_file, model=MODEL)
+        cage(img_file, lf.pixels)
+        get_bboxes(img_file)
 
     subprocess.run(["python","./iou-results/pascalvoc.py","-gt", '../' + GROUND_TRUTH_DIR, "-det", '../' + OUT_TXT_DIR])
 
