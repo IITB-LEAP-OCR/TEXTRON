@@ -159,9 +159,9 @@ def get_boxes(image, width_threshold, height_threshold, thickness=4, type="doubl
         x, y, w, h = cv2.boundingRect(c)
         # Make sure contour area is large enough
         #For English DocBank use the below one
-        if (w < width/2):
+        # if (w < width/2):
         # For multilingual
-        #if (cv2.contourArea(c)) > (width*height)/100000 and h<(height/4) and (w < width/2):
+        if (cv2.contourArea(c)) > (width*height)/100000 and h<(height/4) and (w < width/2) and cv2.contourArea(c)>35:
         #for funsd
         # if (cv2.contourArea(c)) > 30:
             bboxes.append([x, y, w, h])

@@ -23,8 +23,8 @@ warnings.filterwarnings("ignore")
 imgfile =  None
 Y = None
 lf = None
-# MODEL = ocr_predictor(pretrained=True)
-MODEL = None
+MODEL = ocr_predictor(pretrained=True)
+# MODEL = None
 
 class pixelLabels(enum.Enum):
     TEXT = 1
@@ -39,8 +39,8 @@ class Labeling:
         image2 = Image.open(self.imgfile)
         image3 = cv2.imread(self.imgfile)
         self.CHULL        = get_convex_hull(image)
-        self.EDGES        = get_image_edges(image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
-        self.PILLOW_EDGES = get_pillow_image_edges(image2, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
+        self.EDGES        = get_image_edges(image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD, THICKNESS)
+        # self.PILLOW_EDGES = get_pillow_image_edges(image2, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
         self.CONTOUR      = get_contour_labels(image3, WIDTH_THRESHOLD, HEIGHT_THRESHOLD, THICKNESS)
         self.TITLE_CONTOUR = get_title_contour_labels(image3, WIDTH_THRESHOLD, HEIGHT_THRESHOLD, 7)
         self.DOCTR        = get_doctr_labels(model, self.imgfile, image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
@@ -48,7 +48,7 @@ class Labeling:
         self.TESSERACT    = get_tesseract_labels(image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
         self.MASK_HOLES   = get_mask_holes_labels(image)
         self.MASK_OBJECTS = get_mask_objects_labels(image, LUMINOSITY)
-        self.SEGMENTATION = get_segmentation_labels(image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
+        self.SEGMENTATION = get_segmentation_labels(image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD, THICKNESS)
         self.pixels = get_pixels(image)
         self.image = image
 
@@ -229,7 +229,7 @@ def main(img):
 
     Y = io.imread(INPUT_IMG_DIR + img)
     name = img[:len(img) - 8]
-    df = pd.read_csv(ORI_TXT_DIR+name+'.txt', delimiter=' ',
+    df = pd.read_csv(ORI_TXT_DIR+name+'_pro.txt', delimiter=' ',
                      names=["token", "x0", "y0", "x1", "y1", "R", "G", "B", "font name", "label"])
 
     height, width, _ = Y.shape
@@ -275,22 +275,22 @@ def cage(file, X):
 
     LFS = [ 
         CONVEX_HULL_LABEL_PURE, 
-        CONVEX_HULL_LABEL_NOISE, 
-        EDGES_LABEL, 
-        EDGES_LABEL_REVERSE, 
+        # CONVEX_HULL_LABEL_NOISE, 
+        # EDGES_LABEL, 
+        # EDGES_LABEL_REVERSE, 
         # PILLOW_EDGES_LABEL, 
         # PILLOW_EDGES_LABEL_REVERSE,
         DOCTR_LABEL,
         # DOCTR_LABEL2,
-        TESSERACT_LABEL,
+        # TESSERACT_LABEL,
         CONTOUR_LABEL,
-        CONTOUR_TITLE_LABEL
-        MASK_HOLES_LABEL,
-        MASK_OBJECTS_LABEL,
-        SEGMENTATION_LABEL
+        # CONTOUR_TITLE_LABEL,
+        # MASK_HOLES_LABEL,
+        # MASK_OBJECTS_LABEL,
+        # SEGMENTATION_LABEL
     ]
 
-    prob_arr = np.array([0.90, 0.95 ])
+    prob_arr = np.array([0.85, 0.95, 0.8])
 
     rules = LFSet("DETECTION_LF")
     rules.add_lf_list(LFS)
@@ -300,30 +300,30 @@ def cage(file, X):
     Y = io.imread(INPUT_IMG_DIR + file)
     height, width, _ = Y.shape
 
-    if('docbank' in DATASET) or 'testing_sample' in DATASET:
-        name = file[:len(file) - 4]
-        df = pd.read_csv(ORI_TXT_DIR+name+'.txt', delimiter=' ',
-                         names=["token", "x0", "y0", "x1", "y1", "R", "G", "B", "font name", "label"])
+    # if('docbank' in DATASET) or 'testing_sample' in DATASET:
+    #     name = file[:len(file) - 4]
+    #     df = pd.read_csv(ORI_TXT_DIR+name+'.txt', delimiter=' ',
+    #                      names=["token", "x0", "y0", "x1", "y1", "R", "G", "B", "font name", "label"])
 
-        for i in range(df.shape[0]):
-            x0, y0, x1, y1  = (df['x0'][i], df['y0'][i], df['x1'][i], df['y1'][i])
-            x0, y0, x1, y1 = (int(x0*width/1000), int(y0*height/1000), int(x1*width/1000), int(y1*height/1000))
-            w = int((x1-x0)*WIDTH_THRESHOLD)
-            h = int((y1-y0)*HEIGHT_THRESHOLD)
-            cv2.rectangle(Y, (x0, y0), (x0+w, y0+h), (0, 0, 0), cv2.FILLED)
+    #     for i in range(df.shape[0]):
+    #         x0, y0, x1, y1  = (df['x0'][i], df['y0'][i], df['x1'][i], df['y1'][i])
+    #         x0, y0, x1, y1 = (int(x0*width/1000), int(y0*height/1000), int(x1*width/1000), int(y1*height/1000))
+    #         w = int((x1-x0)*WIDTH_THRESHOLD)
+    #         h = int((y1-y0)*HEIGHT_THRESHOLD)
+    #         cv2.rectangle(Y, (x0, y0), (x0+w, y0+h), (0, 0, 0), cv2.FILLED)
 
-    else:
-        name = file[:len(file) - 4]
-        df = pd.read_csv(ORI_TXT_DIR+name+'.txt', delimiter=' ',
-                        names=["label","confidence","x0","y0",'w','h'])   
+    # else:
+    #     name = file[:len(file) - 4]
+    #     df = pd.read_csv(ORI_TXT_DIR+name+'.txt', delimiter=' ',
+    #                     names=["label","confidence","x0","y0",'w','h'])   
 
 
-        for i in range(df.shape[0]):
-            x0, y0, w, h  = (df['x0'][i], df['y0'][i], df['w'][i], df['h'][i])
-            # x0, y0, x1, y1 = (int(x0*width/1000), int(y0*height/1000), int(x1*width/1000), int(y1*height/1000))
-            w = int(w*WIDTH_THRESHOLD)
-            h = int(h*HEIGHT_THRESHOLD)
-            cv2.rectangle(Y, (x0, y0), (x0+w, y0+h), (0, 0, 0), cv2.FILLED)
+    #     for i in range(df.shape[0]):
+    #         x0, y0, w, h  = (df['x0'][i], df['y0'][i], df['w'][i], df['h'][i])
+    #         # x0, y0, x1, y1 = (int(x0*width/1000), int(y0*height/1000), int(x1*width/1000), int(y1*height/1000))
+    #         w = int(w*WIDTH_THRESHOLD)
+    #         h = int(h*HEIGHT_THRESHOLD)
+    #         cv2.rectangle(Y, (x0, y0), (x0+w, y0+h), (0, 0, 0), cv2.FILLED)
 
     
     gold_label = get_label(Y)

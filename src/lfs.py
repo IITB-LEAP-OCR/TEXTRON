@@ -35,7 +35,7 @@ def get_convex_hull(image):
     return intersection_hull
 
 
-def get_image_edges(image, width_threshold, height_threshold):
+def get_image_edges(image, width_threshold, height_threshold, thickness):
     """
     _summary_
 
@@ -51,7 +51,7 @@ def get_image_edges(image, width_threshold, height_threshold):
     edges = pure_binarize(edges)
     io.imsave("temp.jpg", edges)
     image = cv2.imread("temp.jpg")
-    return get_boxes(image, width_threshold, height_threshold, "double")
+    return get_boxes(image, width_threshold, height_threshold, thickness, "double")
 
 
 def get_pillow_image_edges(image, width_threshold, height_threshold):
@@ -73,14 +73,14 @@ def get_pillow_image_edges(image, width_threshold, height_threshold):
     return get_boxes(image, width_threshold, height_threshold, "double")
 
 
-def get_segmentation_labels(image, width_threshold, height_threshold):
+def get_segmentation_labels(image, width_threshold, height_threshold, thickness):
     image = binarize_image(image)
     edges = canny(image)
     image = ndi.binary_fill_holes(edges)
     image = pure_binarize(image)
     io.imsave("temp.jpg", image)
     image = cv2.imread("temp.jpg")
-    return get_boxes(image, width_threshold, height_threshold, "double")
+    return get_boxes(image, width_threshold, height_threshold, thickness, "double")
 
 
 def get_contour_labels(image, width_threshold, height_threshold, thickness):
