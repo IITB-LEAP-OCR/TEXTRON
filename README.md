@@ -59,7 +59,7 @@ TEXTRON yields a better overall performance and also shows significant improveme
 
 # References
 
-1. [SPEAR]((https://github.com/decile-team/spear))
+1. [SPEAR](https://github.com/decile-team/spear)
 2. [Scikit-Image](https://scikit-image.org/)
 3. [Docbank dataset](https://github.com/doc-analysis/DocBank)
 4. [DocTR](https://github.com/mindee/doctr)
@@ -69,4 +69,5 @@ TEXTRON yields a better overall performance and also shows significant improveme
 
 1. Run pip install -r requriements.txt
 2. Make the configurations as stated in config.py
+3. Choose the appropriate Labeling functions in the main.py file and also the respective quaility quide for CAGE
 3. Run the main.py code to get the predictions in the results folder defined in config.py
