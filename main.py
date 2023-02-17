@@ -1,4 +1,4 @@
-from src.lfs import *
+from src.lf_utils import *
 from src.config import *
 from src.utils import get_pixels, get_label
 
@@ -24,7 +24,7 @@ imgfile =  None
 Y = None
 lf = None
 MODEL = ocr_predictor(pretrained=True)
-# MODEL = None
+
 
 class pixelLabels(enum.Enum):
     TEXT = 1
@@ -32,7 +32,6 @@ class pixelLabels(enum.Enum):
 
 
 class Labeling:
-
     def __init__(self,imgfile, model) -> None:
         self.imgfile = INPUT_IMG_DIR + imgfile
         image = io.imread(self.imgfile)
@@ -51,7 +50,6 @@ class Labeling:
         self.SEGMENTATION = get_segmentation_labels(image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD, THICKNESS)
         self.pixels = get_pixels(image)
         self.image = image
-
 
 
 @preprocessor()
@@ -202,24 +200,27 @@ def SEGMENTATION_LABEL(pixel):
         return ABSTAIN
 
 
+### Get LF Analysis of the input images
+def analysis(img):
 
-def main(img):
-    
+    ### Choose the Labeling Functions which should be run
     LFS = [ 
         CONVEX_HULL_LABEL_PURE, 
-        CONVEX_HULL_LABEL_NOISE, 
-        EDGES_LABEL, 
-        EDGES_LABEL_REVERSE, 
+        # CONVEX_HULL_LABEL_NOISE, 
+        # EDGES_LABEL, 
+        # EDGES_LABEL_REVERSE, 
         # PILLOW_EDGES_LABEL, 
         # PILLOW_EDGES_LABEL_REVERSE,
         DOCTR_LABEL,
-        TESSERACT_LABEL,
+        # TESSERACT_LABEL,
         CONTOUR_LABEL,
-        MASK_HOLES_LABEL,
-        MASK_OBJECTS_LABEL,
-        SEGMENTATION_LABEL
+        # MASK_HOLES_LABEL,
+        # MASK_OBJECTS_LABEL,
+        # SEGMENTATION_LABEL
     ]
 
+    QUALITY_GUIDE = [0.85, 0.9, 0.95]
+    
     rules = LFSet("DETECTION_LF")
     rules.add_lf_list(LFS)
 
@@ -229,7 +230,7 @@ def main(img):
 
     Y = io.imread(INPUT_IMG_DIR + img)
     name = img[:len(img) - 8]
-    df = pd.read_csv(ORI_TXT_DIR+name+'_pro.txt', delimiter=' ',
+    df = pd.read_csv(GROUND_TRUTH_DIR+name+'_pro.txt', delimiter=' ',
                      names=["token", "x0", "y0", "x1", "y1", "R", "G", "B", "font name", "label"])
 
     height, width, _ = Y.shape
@@ -257,22 +258,14 @@ def main(img):
     result = analyse.head(16)
     result["image"] = img
 
-    # data_U = get_data(path = './TD_pickle.pkl', check_shapes=True)
-    # #check_shapes being True(above), asserts for relative shapes of arrays in pickle file
-    # print("Number of elements in data list: ", len(data_U))
-    # print("Shape of feature matrix: ", data_U[0].shape)
-    # print("Shape of labels matrix: ", data_U[1].shape)
-    # print("Shape of continuous scores matrix : ", data_U[6].shape)
-    # print("Total number of classes: ", data_U[9])
-
-    # classes = get_classes(path = './TD_json.json')
-    # print("Classes dictionary in json file(modified to have integer keys): ", classes)
     print(result)
     return result
 
 
+### Get CAGE based output predictions
 def cage(file, X):
 
+    ### Choose the Labeling Functions which should be run
     LFS = [ 
         CONVEX_HULL_LABEL_PURE, 
         # CONVEX_HULL_LABEL_NOISE, 
@@ -281,16 +274,16 @@ def cage(file, X):
         # PILLOW_EDGES_LABEL, 
         # PILLOW_EDGES_LABEL_REVERSE,
         DOCTR_LABEL,
-        # DOCTR_LABEL2,
         # TESSERACT_LABEL,
         CONTOUR_LABEL,
-        # CONTOUR_TITLE_LABEL,
         # MASK_HOLES_LABEL,
         # MASK_OBJECTS_LABEL,
         # SEGMENTATION_LABEL
     ]
 
-    prob_arr = np.array([0.85, 0.95, 0.8])
+    QUALITY_GUIDE = [0.85, 0.9, 0.95]
+
+    prob_arr = np.array(QUALITY_GUIDE)
 
     rules = LFSet("DETECTION_LF")
     rules.add_lf_list(LFS)
@@ -300,30 +293,29 @@ def cage(file, X):
     Y = io.imread(INPUT_IMG_DIR + file)
     height, width, _ = Y.shape
 
-    # if('docbank' in DATASET) or 'testing_sample' in DATASET:
-    #     name = file[:len(file) - 4]
-    #     df = pd.read_csv(ORI_TXT_DIR+name+'.txt', delimiter=' ',
-    #                      names=["token", "x0", "y0", "x1", "y1", "R", "G", "B", "font name", "label"])
+    if(GROUND_TRUTH_AVAILABLE):
+        if('docbank' in INPUT_DATA_DIR) or 'testing_sample' in INPUT_DATA_DIR:
+            name = file[:len(file) - 4]
+            df = pd.read_csv(GROUND_TRUTH_DIR+name+'.txt', delimiter=' ',
+                            names=["token", "x0", "y0", "x1", "y1", "R", "G", "B", "font name", "label"])
 
-    #     for i in range(df.shape[0]):
-    #         x0, y0, x1, y1  = (df['x0'][i], df['y0'][i], df['x1'][i], df['y1'][i])
-    #         x0, y0, x1, y1 = (int(x0*width/1000), int(y0*height/1000), int(x1*width/1000), int(y1*height/1000))
-    #         w = int((x1-x0)*WIDTH_THRESHOLD)
-    #         h = int((y1-y0)*HEIGHT_THRESHOLD)
-    #         cv2.rectangle(Y, (x0, y0), (x0+w, y0+h), (0, 0, 0), cv2.FILLED)
+            for i in range(df.shape[0]):
+                x0, y0, x1, y1  = (df['x0'][i], df['y0'][i], df['x1'][i], df['y1'][i])
+                x0, y0, x1, y1 = (int(x0*width/1000), int(y0*height/1000), int(x1*width/1000), int(y1*height/1000))
+                w = int((x1-x0)*WIDTH_THRESHOLD)
+                h = int((y1-y0)*HEIGHT_THRESHOLD)
+                cv2.rectangle(Y, (x0, y0), (x0+w, y0+h), (0, 0, 0), cv2.FILLED)
 
-    # else:
-    #     name = file[:len(file) - 4]
-    #     df = pd.read_csv(ORI_TXT_DIR+name+'.txt', delimiter=' ',
-    #                     names=["label","confidence","x0","y0",'w','h'])   
+        else:
+            name = file[:len(file) - 4]
+            df = pd.read_csv(GROUND_TRUTH_DIR+name+'.txt', delimiter=' ',
+                            names=["label","confidence","x0","y0",'w','h'])   
 
-
-    #     for i in range(df.shape[0]):
-    #         x0, y0, w, h  = (df['x0'][i], df['y0'][i], df['w'][i], df['h'][i])
-    #         # x0, y0, x1, y1 = (int(x0*width/1000), int(y0*height/1000), int(x1*width/1000), int(y1*height/1000))
-    #         w = int(w*WIDTH_THRESHOLD)
-    #         h = int(h*HEIGHT_THRESHOLD)
-    #         cv2.rectangle(Y, (x0, y0), (x0+w, y0+h), (0, 0, 0), cv2.FILLED)
+            for i in range(df.shape[0]):
+                x0, y0, w, h  = (df['x0'][i], df['y0'][i], df['w'][i], df['h'][i])
+                w = int(w*WIDTH_THRESHOLD)
+                h = int(h*HEIGHT_THRESHOLD)
+                cv2.rectangle(Y, (x0, y0), (x0+w, y0+h), (0, 0, 0), cv2.FILLED)
 
     
     gold_label = get_label(Y)
@@ -364,19 +356,10 @@ def cage(file, X):
     io.imsave(RESULTS_DIR + file, labels)
 
 
+### Postprocessing Step
 def get_bboxes(file):
 
-
-
     img = cv2.imread(RESULTS_DIR + file)
-
-    # if(IS_DOCTR_AND == True):
-    #     image = io.imread(imgfile)
-    #     doctr = get_doctr_labels(model, imgfile, image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
-    #     img2 = binarize_image(img)
-    #     img = doctr * img2
-    #     io.imsave("temp.jpg",img)
-    #     img = cv2.imread("temp.jpg")
 
     img = invert(img)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -386,26 +369,10 @@ def get_bboxes(file):
 
     # To detect object contours, we want a black background and a white foreground, so we invert the image (i.e. 255 - pixel value)
     inverted_binary = ~binary
-    width, height = inverted_binary.shape
 
     # Find the contours on the inverted binary image, and store them in a list
     # Contours are drawn around white blobs. hierarchy variable contains info on the relationship between the contours
-    contours, hierarchy = cv2.findContours(inverted_binary,
-    cv2.RETR_TREE,
-    cv2.CHAIN_APPROX_SIMPLE)
-
-
-    #This is inmtermediate contour image having red contours plotted along the letters
-    #with_contours_int = cv2.drawContours(inverted_binary, contours, -1,(0,0,255),3)
-
-    # #We again perform binarization of above image inorder to find contours again 
-    #gray_contour = cv2.cvtColor(with_contours_int, cv2.COLOR_BGR2GRAY)
-
-    #ret, binary_contour = cv2.threshold(with_contours_int, 100, 255, cv2.THRESH_OTSU)
-    #inverted_contour = ~binary_contour
-
-    # We find contours again of this inverted binary map so that word boundaries are detected
-    #contours, hierarchy = cv2.findContours(inverted_contour, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    contours, hierarchy = cv2.findContours(inverted_binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
 
     bboxes = []
@@ -432,6 +399,8 @@ def get_bboxes(file):
     df.to_csv(OUT_TXT_DIR + name + '.txt', sep=' ',index=False, header=False)
 
 
+
+### Main Code
 if __name__ == "__main__":
     dir_list = os.listdir(INPUT_IMG_DIR)
 
@@ -439,6 +408,7 @@ if __name__ == "__main__":
     for img_file in tqdm(dir_list):
         # if not (os.path.exists(RESULTS_DIR + img_file)):
         lf = Labeling(imgfile=img_file, model=MODEL)
+        print(lf)
         cage(img_file, lf.pixels)
         get_bboxes(img_file)
 
@@ -448,7 +418,7 @@ if __name__ == "__main__":
     df = pd.DataFrame()
     for img in tqdm(dir_list):
         lf = Labeling(imgfile=img, model=MODEL)
-        result = main(img)
+        result = analysis(img)
         df = df.append(result)
 
     df.to_csv("results_only_some.csv",index=False)

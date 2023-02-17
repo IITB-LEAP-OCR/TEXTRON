@@ -29,7 +29,7 @@ The work includes usage of CAGE from [SPEAR](https://github.com/decile-team/spea
 
 # Results
 
-|**Class** | **Coverage%** | **DBNet Model** |**Textron3LF** |** Textron4LF** |
+|**Class** | **Coverage%** | **DBNet Model** |**Textron3LF** |**Textron4LF** |
 | :---:   | :---: | :---: | :---:   | :---: |
 Date       | 00.02\%    | 33.34     | **100.00** | **66.67**|
 Author     | 00.08\%    | 76.40     | 75.79      | **77.78**|

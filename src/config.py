@@ -2,42 +2,41 @@ import os
 import torch
 torch.cuda.empty_cache()
 
-INPUT_DATA_DIR    = ''
+### Path to the Data and Results directories
+INPUT_DATA_DIR    = './../processed/docbank_100/'
 RESULTS_DATA_DIR  = './../results/'
-DATASET = './../sample'
 
-INPUT_IMG_DIR = os.path.join(INPUT_DATA_DIR, DATASET + '/images/')
-ANN_IMG_DIR   = os.path.join(INPUT_DATA_DIR, DATASET + '/ann/')
-ORI_TXT_DIR   = os.path.join(INPUT_DATA_DIR, DATASET + '/txt/')
+### Keep True if True labels are available, else False
+GROUND_TRUTH_AVAILABLE = True
+
+### Path to images and the ground truths
+INPUT_IMG_DIR    = os.path.join(INPUT_DATA_DIR, 'images/')
+GROUND_TRUTH_DIR = os.path.join(INPUT_DATA_DIR, 'txt/')
 
 
-RESULT_VALUE =  34
+### Directories for resultant predictions
+RESULT_VALUE    =  35
 RESULTS_DIR     = os.path.join(RESULTS_DATA_DIR, 'cage/results' + str(RESULT_VALUE) + '/')
 OUT_TXT_DIR     = os.path.join(RESULTS_DATA_DIR, "txt/txt" + str(RESULT_VALUE) + '/')
 PREDICTIONS_DIR = os.path.join(RESULTS_DATA_DIR, "predictions/predictions" + str(RESULT_VALUE) + '/')
 
+
+# Create a new directory if it does not exist already
 if not os.path.exists(RESULTS_DIR):
-   # Create a new directory because it does not exist
    os.makedirs(RESULTS_DIR)
    os.makedirs(OUT_TXT_DIR)
    os.makedirs(PREDICTIONS_DIR)
 
 
-GROUND_TRUTH = True
-GROUND_TRUTH_DIR = os.path.join(INPUT_DATA_DIR,  DATASET + '/gt_pro')
-
-IS_DOCTR_AND = False
-
-IS_EXPERIMENT    = False
-EXPERIMENT_VALUE = len(os.listdir(RESULTS_DIR)) + 1
-
-
-ANN_DOCTR_DIR = './../testing_sample/doctr_txt/'
-
-LUMINOSITY = 1.0
-
+### Hyperparameters for Shrinkage threshold on LF outputs
 WIDTH_THRESHOLD = 0.90
 HEIGHT_THRESHOLD = 0.75
 
-
+### Hyperparameter for Contour thickness to generate bboxes
 THICKNESS = 4
+
+### This is used when already DL model results are present, to save time
+ANN_DOCTR_DIR = './../testing_sample/doctr_txt/'
+
+### Used in MASK model LF to change intensity as hyperparameter
+LUMINOSITY = 1.0
