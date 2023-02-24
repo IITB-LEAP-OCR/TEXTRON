@@ -1,3 +1,6 @@
 [submodule "spear"]
 	path = spear
 	url = https://github.com/decile-team/spear.git
+[submodule "submodlib"]
+	path = submodlib
+	url = https://github.com/decile-team/submodlib.git

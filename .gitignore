@@ -5,6 +5,8 @@ __pycache__/
 
 # Remove data
 ./data/
+data_pipeline/*
+log/*
 
 # C extensions
 *.so
