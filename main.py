@@ -1,20 +1,21 @@
 from src.lf_utils import *
 from src.config import *
-from src.utils import get_pixels, get_label
+from src.utils import get_label
 
 from PIL import Image
 from tqdm import tqdm
 
-import enum
-import subprocess 
+import subprocess
 import pandas as pd
 
 from doctr.models import ocr_predictor
 
 from spear.spear.labeling import labeling_function, ABSTAIN, preprocessor
 from spear.spear.labeling import LFSet, PreLabels
-from spear.spear.utils import get_data, get_classes
 from spear.spear.cage import Cage
+
+from data_processing import Labeling, pixelLabels
+from post_processing import get_bboxes
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -24,32 +25,6 @@ imgfile =  None
 Y = None
 lf = None
 MODEL = ocr_predictor(pretrained=True)
-
-
-class pixelLabels(enum.Enum):
-    TEXT = 1
-    NOT_TEXT = 0
-
-
-class Labeling:
-    def __init__(self,imgfile, model) -> None:
-        self.imgfile = INPUT_IMG_DIR + imgfile
-        image = io.imread(self.imgfile)
-        image2 = Image.open(self.imgfile)
-        image3 = cv2.imread(self.imgfile)
-        self.CHULL        = get_convex_hull(image)
-        self.EDGES        = get_image_edges(image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD, THICKNESS)
-        # self.PILLOW_EDGES = get_pillow_image_edges(image2, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
-        self.CONTOUR      = get_contour_labels(image3, WIDTH_THRESHOLD, HEIGHT_THRESHOLD, THICKNESS)
-        self.TITLE_CONTOUR = get_title_contour_labels(image3, WIDTH_THRESHOLD, HEIGHT_THRESHOLD, 7)
-        self.DOCTR        = get_doctr_labels(model, self.imgfile, image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
-        # self.DOCTR        = get_existing_doctr_labels(ANN_DOCTR_DIR, imgfile, image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
-        self.TESSERACT    = get_tesseract_labels(image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
-        self.MASK_HOLES   = get_mask_holes_labels(image)
-        self.MASK_OBJECTS = get_mask_objects_labels(image, LUMINOSITY)
-        self.SEGMENTATION = get_segmentation_labels(image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD, THICKNESS)
-        self.pixels = get_pixels(image)
-        self.image = image
 
 
 @preprocessor()
@@ -203,43 +178,28 @@ def SEGMENTATION_LABEL(pixel):
 ### Get LF Analysis of the input images
 def analysis(img):
 
-    ### Choose the Labeling Functions which should be run
-    LFS = [ 
-        CONVEX_HULL_LABEL_PURE, 
-        # CONVEX_HULL_LABEL_NOISE, 
-        # EDGES_LABEL, 
-        # EDGES_LABEL_REVERSE, 
-        # PILLOW_EDGES_LABEL, 
-        # PILLOW_EDGES_LABEL_REVERSE,
-        DOCTR_LABEL,
-        # TESSERACT_LABEL,
-        CONTOUR_LABEL,
-        # MASK_HOLES_LABEL,
-        # MASK_OBJECTS_LABEL,
-        # SEGMENTATION_LABEL
-    ]
+    ### Labeling Functions which should be run
+    LFS = [globals()[LF] for LF in lab_funcs]
 
-    QUALITY_GUIDE = [0.85, 0.9, 0.95]
-    
     rules = LFSet("DETECTION_LF")
     rules.add_lf_list(LFS)
 
     R = np.zeros((lf.pixels.shape[0],len(rules.get_lfs())))
-
-    
-
     Y = io.imread(INPUT_IMG_DIR + img)
+    
     name = img[:len(img) - 8]
-    df = pd.read_csv(GROUND_TRUTH_DIR+name+'_pro.txt', delimiter=' ',
+    
+    if GROUND_TRUTH_AVAILABLE:
+        df = pd.read_csv(GROUND_TRUTH_DIR+name+'_pro.txt', delimiter=' ',
                      names=["token", "x0", "y0", "x1", "y1", "R", "G", "B", "font name", "label"])
 
-    height, width, _ = Y.shape
-    for i in range(df.shape[0]):
-        x0, y0, x1, y1  = (df['x0'][i], df['y0'][i], df['x1'][i], df['y1'][i])
-        x0, y0, x1, y1 = (int(x0*width/1000), int(y0*height/1000), int(x1*width/1000), int(y1*height/1000))
-        w = int((x1-x0)*WIDTH_THRESHOLD)
-        h = int((y1-y0)*HEIGHT_THRESHOLD)
-        cv2.rectangle(Y, (x0, y0), (x0+w, y0+h), (0, 0, 0), cv2.FILLED)
+        height, width, _ = Y.shape
+        for i in range(df.shape[0]):
+            x0, y0, x1, y1  = (df['x0'][i], df['y0'][i], df['x1'][i], df['y1'][i])
+            x0, y0, x1, y1 = (int(x0*width/1000), int(y0*height/1000), int(x1*width/1000), int(y1*height/1000))
+            w = int((x1-x0)*WIDTH_THRESHOLD)
+            h = int((y1-y0)*HEIGHT_THRESHOLD)
+            cv2.rectangle(Y, (x0, y0), (x0+w, y0+h), (0, 0, 0), cv2.FILLED)
 
     gold_label = get_label(Y)
 
@@ -265,23 +225,8 @@ def analysis(img):
 ### Get CAGE based output predictions
 def cage(file, X):
 
-    ### Choose the Labeling Functions which should be run
-    LFS = [ 
-        CONVEX_HULL_LABEL_PURE, 
-        # CONVEX_HULL_LABEL_NOISE, 
-        # EDGES_LABEL, 
-        # EDGES_LABEL_REVERSE, 
-        # PILLOW_EDGES_LABEL, 
-        # PILLOW_EDGES_LABEL_REVERSE,
-        DOCTR_LABEL,
-        # TESSERACT_LABEL,
-        CONTOUR_LABEL,
-        # MASK_HOLES_LABEL,
-        # MASK_OBJECTS_LABEL,
-        # SEGMENTATION_LABEL
-    ]
-
-    QUALITY_GUIDE = [0.85, 0.9, 0.95]
+    ### Labeling Functions which should be run
+    LFS = [globals()[LF] for LF in lab_funcs]
 
     prob_arr = np.array(QUALITY_GUIDE)
 
@@ -354,50 +299,6 @@ def cage(file, X):
 
     labels = labels.reshape(x,y)
     io.imsave(RESULTS_DIR + file, labels)
-
-
-### Postprocessing Step
-def get_bboxes(file):
-
-    img = cv2.imread(RESULTS_DIR + file)
-
-    img = invert(img)
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-    # Convert the grayscale image to binary
-    ret, binary = cv2.threshold(gray, 100, 255, cv2.THRESH_OTSU)
-
-    # To detect object contours, we want a black background and a white foreground, so we invert the image (i.e. 255 - pixel value)
-    inverted_binary = ~binary
-
-    # Find the contours on the inverted binary image, and store them in a list
-    # Contours are drawn around white blobs. hierarchy variable contains info on the relationship between the contours
-    contours, hierarchy = cv2.findContours(inverted_binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
-
-    bboxes = []
-    # Draw a bounding box around all contours
-    for c in contours:
-        x, y, w, h = cv2.boundingRect(c)
-        w = int(w*(1/WIDTH_THRESHOLD))
-        h = int(h*(1/HEIGHT_THRESHOLD))
-        # Make sure contour area is large enough
-        if cv2.contourArea(c) > 30:
-            bboxes.append(['text',1,x, y, w, h])
-
-    final_img = cv2.imread(INPUT_IMG_DIR + file)
-    for b in bboxes:
-        x = b[2]
-        y = b[3]
-        w = int(b[4])
-        h = int(b[5])
-        cv2.rectangle(final_img,(x,y), (x+w,y+h), (0, 255, 0),1)
-
-    df = pd.DataFrame(bboxes, columns = ['label', 'confidence', 'X', 'Y', 'W', 'H'])
-    name = file[:len(file) - 4]
-    io.imsave(PREDICTIONS_DIR + name + '_pred.jpg', final_img)
-    df.to_csv(OUT_TXT_DIR + name + '.txt', sep=' ',index=False, header=False)
-
 
 
 ### Main Code

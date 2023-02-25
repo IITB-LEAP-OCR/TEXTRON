@@ -130,3 +130,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Intermediate files: .pkl, .csv, .json
+*.pkl
+*.json
+*.csv
+sms_log_1.txt
+temp.jpg

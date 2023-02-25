@@ -85,13 +85,14 @@ def get_segmentation_labels(image, width_threshold, height_threshold, thickness)
 
 def get_contour_labels(image, width_threshold, height_threshold, thickness):
     """
-    _summary_
-
     Args:
-        image (_type_): _description_
+        image (numpy.ndarray): An input image as a NumPy array.
+        width_threshold (float): A float value to adjust the width of the extracted text boxes.
+        height_threshold (float): A float value to adjust the height of the extracted text boxes.
+        thickness (int): An integer value indicating the thickness of the bounding box around the text regions.
 
     Returns:
-        _type_: _description_
+        numpy.ndarray: A binary image as a NumPy array with white pixels indicating the text regions.
     """
     return get_boxes(image, width_threshold, height_threshold, thickness, "double")
 

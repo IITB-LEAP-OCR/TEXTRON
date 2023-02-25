@@ -53,10 +53,9 @@ def binarize_image(image):
     _summary_
 
     Args:
-        image (_type_): _description_
-
+        image (_type_): a color image 
     Returns:
-        _type_: _description_
+        _type_: binarized version of the image using the Otsu thresholding algorithm
     """
     image = color.rgb2gray(image)
     thresh = threshold_otsu(image)
@@ -109,16 +108,16 @@ def store_pickle(data, location):
 
 
 def get_boxes(image, width_threshold, height_threshold, thickness=4, type="double"):
-    """_summary_
-
+    """
     Args:
-        image (_type_): _description_
-        width_threshold (_type_): _description_
-        height_threshold (_type_): _description_
-        type (str, optional): _description_. Defaults to "double".
-
+        image (ndarray): The input image.
+        width_threshold (float): The width of the bounding box is multiplied by this factor.
+        height_threshold (float): The height of the bounding box is multiplied by this factor.
+        thickness (int, optional): The thickness of the bounding box. Default value is 4.
+        type (str, optional): The type of the input image. The default value is "double".
+    
     Returns:
-        _type_: _description_
+        final_img (ndarray): The output binary image with the bounding boxes drawn around text regions.
     """
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
