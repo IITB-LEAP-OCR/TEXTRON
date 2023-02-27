@@ -5,6 +5,7 @@ __pycache__/
 
 # Remove data
 ./data/
+.idea/
 data_pipeline/*
 log/*
 

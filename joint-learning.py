@@ -1,4 +1,5 @@
 import os
+import pickle
 os.environ["USE_TORCH"]="1"
 
 from src.lf_utils import *
@@ -9,15 +10,13 @@ from PIL import Image
 from tqdm import tqdm
 
 import enum
-import subprocess 
 import pandas as pd
 
 from doctr.models import ocr_predictor
 
 from spear.labeling import labeling_function, ABSTAIN, preprocessor
 from spear.labeling import LFSet, PreLabels
-from spear.utils import get_data, get_classes
-from spear.cage import Cage
+from spear.jl import JL
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -31,7 +30,6 @@ MODEL = ocr_predictor(pretrained=True)
 class pixelLabels(enum.Enum):
     TEXT = 1
     NOT_TEXT = 0
-
 
 class Labeling:
     def __init__(self,imgfile, model) -> None:
@@ -201,16 +199,41 @@ def SEGMENTATION_LABEL(pixel):
         return ABSTAIN
 
 
-### Get LF Analysis of the input images
-def analysis(img):
+def get_various_data(X, Y, X_feats, temp_len, validation_size=100, test_size=200, L_size=100, U_size=None):
+    if U_size == None:
+        U_size = X.shape[0] - L_size - validation_size - test_size
 
-    ### Choose the Labeling Functions which should be run
-    LFS = [ 
-        CONVEX_HULL_LABEL_PURE, 
-        # CONVEX_HULL_LABEL_NOISE, 
-        # EDGES_LABEL, 
-        # EDGES_LABEL_REVERSE, 
-        # PILLOW_EDGES_LABEL, 
+    X_V = X[-validation_size:]
+    Y_V = Y[-validation_size:]
+    X_feats_V = X_feats[-validation_size:]
+    R_V = np.zeros((validation_size, temp_len))
+
+    X_T = X[-(validation_size + test_size):-validation_size]
+    Y_T = Y[-(validation_size + test_size):-validation_size]
+    X_feats_T = X_feats[-(validation_size + test_size):-validation_size]
+    R_T = np.zeros((test_size, temp_len))
+
+    X_L = X[-(validation_size + test_size + L_size):-(validation_size + test_size)]
+    Y_L = Y[-(validation_size + test_size + L_size):-(validation_size + test_size)]
+    X_feats_L = X_feats[-(validation_size + test_size + L_size):-(validation_size + test_size)]
+    R_L = np.zeros((L_size, temp_len))
+
+    # X_U = X[:-(validation_size+test_size+L_size)]
+    X_U = X[:U_size]
+    X_feats_U = X_feats[:U_size]
+    # Y_U = Y[:-(validation_size+test_size+L_size)]
+    R_U = np.zeros((U_size, temp_len))
+
+    return X_V, Y_V, X_feats_V, R_V, X_T, Y_T, X_feats_T, R_T, X_L, Y_L, X_feats_L, R_L, X_U, X_feats_U, R_U
+
+
+def get_JL_label(img_file, X):
+    LFS = [
+        CONVEX_HULL_LABEL_PURE,
+        # CONVEX_HULL_LABEL_NOISE,
+        # EDGES_LABEL,
+        # EDGES_LABEL_REVERSE,
+        # PILLOW_EDGES_LABEL,
         # PILLOW_EDGES_LABEL_REVERSE,
         DOCTR_LABEL,
         # TESSERACT_LABEL,
@@ -220,142 +243,142 @@ def analysis(img):
         # SEGMENTATION_LABEL
     ]
 
-    QUALITY_GUIDE = [0.85, 0.9, 0.95]
-    
-    rules = LFSet("DETECTION_LF")
-    rules.add_lf_list(LFS)
+    validation_size = 10000
+    test_size = 10000
+    L_size = 100000
+    U_size = X.shape[0]
+    # U_size = None
 
-    R = np.zeros((lf.pixels.shape[0],len(rules.get_lfs())))
+    loss_func_mask = [1, 0, 1, 0, 0, 0, 0]
 
-    
+    batch_size = 150
+    lr_fm = 0.0005
+    lr_gm = 0.01
+    use_accuracy_score = False
 
-    Y = io.imread(INPUT_IMG_DIR + img)
-    name = img[:len(img) - 8]
-    df = pd.read_csv(GROUND_TRUTH_DIR+name+'_pro.txt', delimiter=' ',
-                     names=["token", "x0", "y0", "x1", "y1", "R", "G", "B", "font name", "label"])
-
-    height, width, _ = Y.shape
-    for i in range(df.shape[0]):
-        x0, y0, x1, y1  = (df['x0'][i], df['y0'][i], df['x1'][i], df['y1'][i])
-        x0, y0, x1, y1 = (int(x0*width/1000), int(y0*height/1000), int(x1*width/1000), int(y1*height/1000))
-        w = int((x1-x0)*WIDTH_THRESHOLD)
-        h = int((y1-y0)*HEIGHT_THRESHOLD)
-        cv2.rectangle(Y, (x0, y0), (x0+w, y0+h), (0, 0, 0), cv2.FILLED)
-
-    gold_label = get_label(Y)
-
-    td_noisy_labels = PreLabels(name="TD",
-                               data=lf.pixels,
-                               rules=rules,
-                               gold_labels=gold_label,
-                               labels_enum=pixelLabels,
-                               num_classes=2)
-
-    L,S = td_noisy_labels.get_labels()
-
-
-    analyse = td_noisy_labels.analyse_lfs(plot=True)
-
-    result = analyse.head(16)
-    result["image"] = img
-
-    print(result)
-    return result
-
-
-### Get CAGE based output predictions
-def cage(file, X):
-
-    ### Choose the Labeling Functions which should be run
-    LFS = [ 
-        CONVEX_HULL_LABEL_PURE, 
-        # CONVEX_HULL_LABEL_NOISE, 
-        # EDGES_LABEL, 
-        # EDGES_LABEL_REVERSE, 
-        # PILLOW_EDGES_LABEL, 
-        # PILLOW_EDGES_LABEL_REVERSE,
-        DOCTR_LABEL,
-        # TESSERACT_LABEL,
-        CONTOUR_LABEL,
-        # MASK_HOLES_LABEL,
-        # MASK_OBJECTS_LABEL,
-        # SEGMENTATION_LABEL
-    ]
-
-    QUALITY_GUIDE = [0.85, 0.9, 0.95]
-
-    prob_arr = np.array(QUALITY_GUIDE)
+    n_features = 10
+    n_hidden = 512
+    feature_model = 'nn'
 
     rules = LFSet("DETECTION_LF")
     rules.add_lf_list(LFS)
-
     n_lfs = len(rules.get_lfs())
 
-    Y = io.imread(INPUT_IMG_DIR + file)
+    if (os.path.exists('features.pkl')):
+        with open('features.pkl', 'rb') as f:
+            X_feats = pickle.load(f)
+    else:
+        X_feats = np.random.uniform(-1, 1, size=(X.shape[0], 10))
+
+    Y = io.imread(INPUT_IMG_DIR + img_file)
     height, width, _ = Y.shape
 
-    if(GROUND_TRUTH_AVAILABLE):
-        if('docbank' in INPUT_DATA_DIR) or 'testing_sample' in INPUT_DATA_DIR:
-            name = file[:len(file) - 4]
-            df = pd.read_csv(GROUND_TRUTH_DIR+name+'.txt', delimiter=' ',
-                            names=["token", "x0", "y0", "x1", "y1", "R", "G", "B", "font name", "label"])
+    if (GROUND_TRUTH_AVAILABLE):
+        if ('docbank' in INPUT_DATA_DIR) or 'testing_sample' in INPUT_DATA_DIR:
+            name = img_file[:len(img_file) - 4]
+            df = pd.read_csv(GROUND_TRUTH_DIR + name + '.txt', delimiter=' ',
+                             names=["token", "x0", "y0", "x1", "y1", "R", "G", "B", "font name", "label"])
 
             for i in range(df.shape[0]):
-                x0, y0, x1, y1  = (df['x0'][i], df['y0'][i], df['x1'][i], df['y1'][i])
-                x0, y0, x1, y1 = (int(x0*width/1000), int(y0*height/1000), int(x1*width/1000), int(y1*height/1000))
-                w = int((x1-x0)*WIDTH_THRESHOLD)
-                h = int((y1-y0)*HEIGHT_THRESHOLD)
-                cv2.rectangle(Y, (x0, y0), (x0+w, y0+h), (0, 0, 0), cv2.FILLED)
+                x0, y0, x1, y1 = (df['x0'][i], df['y0'][i], df['x1'][i], df['y1'][i])
+                x0, y0, x1, y1 = (
+                int(x0 * width / 1000), int(y0 * height / 1000), int(x1 * width / 1000), int(y1 * height / 1000))
+                w = int((x1 - x0) * WIDTH_THRESHOLD)
+                h = int((y1 - y0) * HEIGHT_THRESHOLD)
+                cv2.rectangle(Y, (x0, y0), (x0 + w, y0 + h), (0, 0, 0), cv2.FILLED)
 
         else:
             name = file[:len(file) - 4]
-            df = pd.read_csv(GROUND_TRUTH_DIR+name+'.txt', delimiter=' ',
-                            names=["label","confidence","x0","y0",'w','h'])   
+            df = pd.read_csv(GROUND_TRUTH_DIR + name + '.txt', delimiter=' ',
+                             names=["label", "confidence", "x0", "y0", 'w', 'h'])
 
             for i in range(df.shape[0]):
-                x0, y0, w, h  = (df['x0'][i], df['y0'][i], df['w'][i], df['h'][i])
-                w = int(w*WIDTH_THRESHOLD)
-                h = int(h*HEIGHT_THRESHOLD)
-                cv2.rectangle(Y, (x0, y0), (x0+w, y0+h), (0, 0, 0), cv2.FILLED)
+                x0, y0, w, h = (df['x0'][i], df['y0'][i], df['w'][i], df['h'][i])
+                w = int(w * WIDTH_THRESHOLD)
+                h = int(h * HEIGHT_THRESHOLD)
+                cv2.rectangle(Y, (x0, y0), (x0 + w, y0 + h), (0, 0, 0), cv2.FILLED)
 
-    
-    gold_label = get_label(Y)
+    Y = get_label(Y)
 
+    X_V, Y_V, X_feats_V, _, X_T, Y_T, X_feats_T, _, X_L, Y_L, X_feats_L, _, X_U, X_feats_U, _ = get_various_data(X, Y, \
+                                                                                                                 X_feats,
+                                                                                                                 n_lfs,
+                                                                                                                 validation_size,
+                                                                                                                 test_size,
+                                                                                                                 L_size,
+                                                                                                                 U_size)
 
-    path_json = 'sms_json.json'
-    T_path_pkl = 'pickle_T.pkl' #test data - have true labels
-    U_path_pkl = 'pickle_U.pkl' #unlabelled data - don't have true labels
+    path_json = 'data_pipeline/JL/sms_json.json'
+    V_path_pkl = 'data_pipeline/JL/sms_pickle_V.pkl'  # validation data - have true labels
+    T_path_pkl = 'data_pipeline/JL/sms_pickle_T.pkl'  # test data - have true labels
+    L_path_pkl = 'data_pipeline/JL/sms_pickle_L.pkl'  # Labeled data - have true labels
+    U_path_pkl = 'data_pipeline/JL/sms_pickle_U.pkl'  # unlabelled data - don't have true labels
 
-    log_path_cage_1 = 'sms_log_1.txt' #cage is an algorithm, can be found below
-
+    log_path_jl_1 = 'log/JL/sms_log_1.txt'  # jl is an algorithm, can be found below
+    params_path = 'params/JL/sms_params.pkl'  # file path to store parameters of JL, used below
 
     sms_noisy_labels = PreLabels(name="sms",
-                               data=X,
-                               gold_labels=gold_label,
-                               rules=rules,
-                               labels_enum=pixelLabels,
-                               num_classes=2)
+                                 data=X_V,
+                                 gold_labels=Y_V,
+                                 data_feats=X_feats_V,
+                                 rules=rules,
+                                 labels_enum=pixelLabels,
+                                 num_classes=2)
+    sms_noisy_labels.generate_pickle(V_path_pkl)
+    sms_noisy_labels.generate_json(path_json)  # generating json files once is enough
+
+    sms_noisy_labels = PreLabels(name="sms",
+                                 data=X_T,
+                                 gold_labels=Y_T,
+                                 data_feats=X_feats_T,
+                                 rules=rules,
+                                 labels_enum=pixelLabels,
+                                 num_classes=2)
     sms_noisy_labels.generate_pickle(T_path_pkl)
-    sms_noisy_labels.generate_json(path_json) #generating json files once is enough
 
     sms_noisy_labels = PreLabels(name="sms",
-                                data=X,
-                                rules=rules,
-                                labels_enum=pixelLabels,
-                                num_classes=2) #note that we don't pass gold_labels here, for the unlabelled data
+                                 data=X_L,
+                                 gold_labels=Y_L,
+                                 data_feats=X_feats_L,
+                                 rules=rules,
+                                 labels_enum=pixelLabels,
+                                 num_classes=2)
+    sms_noisy_labels.generate_pickle(L_path_pkl)
+
+    sms_noisy_labels = PreLabels(name="sms",
+                                 data=X_U,
+                                 rules=rules,
+                                 data_feats=X_feats_U,
+                                 labels_enum=pixelLabels,
+                                 num_classes=2)  # note that we don't pass gold_labels here, for the unlabelled data
     sms_noisy_labels.generate_pickle(U_path_pkl)
 
+    jl = JL(path_json=path_json, n_lfs=n_lfs, n_features=n_features, feature_model=feature_model, \
+            n_hidden=n_hidden)
 
-    cage = Cage(path_json = path_json, n_lfs = n_lfs)
+    print("Running now for long time")
 
-    probs = cage.fit_and_predict_proba(path_pkl = U_path_pkl, path_test = T_path_pkl, path_log = log_path_cage_1, \
-                                    qt = prob_arr, qc = prob_arr, metric_avg = ['binary'], n_epochs = 50, lr = 0.01)
-    labels = np.argmax(probs, 1)
-    x,y,_ = Y.shape
+    probs_fm, probs_gm = jl.fit_and_predict_proba(path_L=L_path_pkl, path_U=U_path_pkl, path_V=V_path_pkl, \
+                                                  path_T=T_path_pkl, loss_func_mask=loss_func_mask,
+                                                  batch_size=batch_size, lr_fm=lr_fm, lr_gm= \
+                                                      lr_gm, use_accuracy_score=use_accuracy_score,
+                                                  path_log=log_path_jl_1, return_gm=True, n_epochs= \
+                                                      10, start_len=7, stop_len=10, is_qt=True, is_qc=True, qt=0.9,
+                                                  qc=0.85, metric_avg='binary')
 
-    labels = labels.reshape(x,y)
-    io.imsave(RESULTS_DIR + file, labels)
+    labels = np.argmax(probs_fm, 1)
+    print("probs_fm shape: ", probs_fm.shape)
+    print("probs_gm shape: ", probs_gm.shape)
 
+    with open(img_file + 'labels.pickle', 'wb') as handle:
+        pickle.dump(labels, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    with open(img_file + 'gm_labels.pickle', 'wb') as handle:
+        pickle.dump(probs_gm, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    x, y, _ = Y.shape
+    labels = labels.reshape(x, y)
+    io.imsave(RESULTS_DIR + img_file, labels)
 
 ### Postprocessing Step
 def get_bboxes(file):
@@ -401,208 +424,15 @@ def get_bboxes(file):
     
 
 ### Main Code
-# if __name__ == "__main__":
-dir_list = os.listdir(INPUT_IMG_DIR)
+if __name__ == "__main__":
+    dir_list = os.listdir(INPUT_IMG_DIR)
 
-### CAGE Execution
-for img_file in tqdm(dir_list):
-    # if not (os.path.exists(RESULTS_DIR + img_file)):
-    lf = Labeling(imgfile=img_file, model=MODEL)
-    print(lf)
-    break
-
-X = lf.pixels
-
-if(os.path.exists('features.pkl')):
-    with open('features.pkl', 'rb') as f:
-        X_feats = pickle.load(f)
-else:
-    X_feats = np.random.uniform(-1, 1, size=(X.shape[0], 10))
-
-X_feats.shape
-
-Y = io.imread(INPUT_IMG_DIR + img_file)
-height, width, _ = Y.shape
-
-if(GROUND_TRUTH_AVAILABLE):
-    if('docbank' in INPUT_DATA_DIR) or 'testing_sample' in INPUT_DATA_DIR:
-        name = img_file[:len(img_file) - 4]
-        df = pd.read_csv(GROUND_TRUTH_DIR+name+'.txt', delimiter=' ',
-                        names=["token", "x0", "y0", "x1", "y1", "R", "G", "B", "font name", "label"])
-
-        for i in range(df.shape[0]):
-            x0, y0, x1, y1  = (df['x0'][i], df['y0'][i], df['x1'][i], df['y1'][i])
-            x0, y0, x1, y1 = (int(x0*width/1000), int(y0*height/1000), int(x1*width/1000), int(y1*height/1000))
-            w = int((x1-x0)*WIDTH_THRESHOLD)
-            h = int((y1-y0)*HEIGHT_THRESHOLD)
-            cv2.rectangle(Y, (x0, y0), (x0+w, y0+h), (0, 0, 0), cv2.FILLED)
-
-    else:
-        name = file[:len(file) - 4]
-        df = pd.read_csv(GROUND_TRUTH_DIR+name+'.txt', delimiter=' ',
-                        names=["label","confidence","x0","y0",'w','h'])   
-
-        for i in range(df.shape[0]):
-            x0, y0, w, h  = (df['x0'][i], df['y0'][i], df['w'][i], df['h'][i])
-            w = int(w*WIDTH_THRESHOLD)
-            h = int(h*HEIGHT_THRESHOLD)
-            cv2.rectangle(Y, (x0, y0), (x0+w, y0+h), (0, 0, 0), cv2.FILLED)
-
-
-Y = get_label(Y)
-
-LFS = [ 
-    CONVEX_HULL_LABEL_PURE, 
-    # CONVEX_HULL_LABEL_NOISE, 
-    # EDGES_LABEL, 
-    # EDGES_LABEL_REVERSE, 
-    # PILLOW_EDGES_LABEL, 
-    # PILLOW_EDGES_LABEL_REVERSE,
-    DOCTR_LABEL,
-    # TESSERACT_LABEL,
-    CONTOUR_LABEL,
-    # MASK_HOLES_LABEL,
-    # MASK_OBJECTS_LABEL,
-    # SEGMENTATION_LABEL
-]
-
-rules = LFSet("DETECTION_LF")
-rules.add_lf_list(LFS)
-
-X.shape[0]
-
-def get_various_data(X, Y, X_feats, temp_len, validation_size = 100, test_size = 200, L_size = 100, U_size = None):
-    if U_size == None:
-        U_size = X.shape[0] - L_size - validation_size - test_size
-        print(U_size)
-    print(X.shape)
-    X_V = X[-validation_size:]
-    Y_V = Y[-validation_size:]
-    X_feats_V = X_feats[-validation_size:]
-    R_V = np.zeros((validation_size, temp_len))
-
-    X_T = X[-(validation_size+test_size):-validation_size]
-    Y_T = Y[-(validation_size+test_size):-validation_size]
-    X_feats_T = X_feats[-(validation_size+test_size):-validation_size]
-    R_T = np.zeros((test_size,temp_len))
-
-    X_L = X[-(validation_size+test_size+L_size):-(validation_size+test_size)]
-    Y_L = Y[-(validation_size+test_size+L_size):-(validation_size+test_size)]
-    X_feats_L = X_feats[-(validation_size+test_size+L_size):-(validation_size+test_size)]
-    R_L = np.zeros((L_size,temp_len))
-
-    # X_U = X[:-(validation_size+test_size+L_size)]
-    X_U = X[:U_size]
-    X_feats_U = X_feats[:U_size]
-    # Y_U = Y[:-(validation_size+test_size+L_size)]
-    R_U = np.zeros((U_size,temp_len))
-
-    return X_V,Y_V,X_feats_V,R_V, X_T,Y_T,X_feats_T,R_T, X_L,Y_L,X_feats_L,R_L, X_U,X_feats_U,R_U
-
-# from spear.spear.helper.utils import load_data_to_numpy, get_various_data
-
-validation_size = 10000
-test_size = 10000
-L_size = 100000
-U_size = None
-n_lfs = len(rules.get_lfs())
-
-X_V, Y_V, X_feats_V,_, X_T, Y_T, X_feats_T,_, X_L, Y_L, X_feats_L,_, X_U, X_feats_U,_ = get_various_data(X, Y,\
-    X_feats, n_lfs, validation_size, test_size, L_size, U_size)
-
-path_json = 'data_pipeline/JL/sms_json.json'
-V_path_pkl = 'data_pipeline/JL/sms_pickle_V.pkl' #validation data - have true labels
-T_path_pkl = 'data_pipeline/JL/sms_pickle_T.pkl' #test data - have true labels
-L_path_pkl = 'data_pipeline/JL/sms_pickle_L.pkl' #Labeled data - have true labels
-U_path_pkl = 'data_pipeline/JL/sms_pickle_U.pkl' #unlabelled data - don't have true labels
-
-log_path_jl_1 = 'log/JL/sms_log_1.txt' #jl is an algorithm, can be found below
-params_path = 'params/JL/sms_params.pkl' #file path to store parameters of JL, used below
-
-Y_V
-
-# from spear.labeling import PreLabels
-
-sms_noisy_labels = PreLabels(name="sms",
-                               data=X_V,
-                               gold_labels=Y_V,
-                               data_feats=X_feats_V,
-                               rules=rules,
-                               labels_enum=pixelLabels,
-                               num_classes=2)
-sms_noisy_labels.generate_pickle(V_path_pkl)
-sms_noisy_labels.generate_json(path_json) #generating json files once is enough
-
-sms_noisy_labels = PreLabels(name="sms",
-                               data=X_T,
-                               gold_labels=Y_T,
-                               data_feats=X_feats_T,
-                               rules=rules,
-                               labels_enum=pixelLabels,
-                               num_classes=2)
-sms_noisy_labels.generate_pickle(T_path_pkl)
-
-sms_noisy_labels = PreLabels(name="sms",
-                               data=X_L,
-                               gold_labels=Y_L,
-                               data_feats=X_feats_L,
-                               rules=rules,
-                               labels_enum=pixelLabels,
-                               num_classes=2)
-sms_noisy_labels.generate_pickle(L_path_pkl)
-
-sms_noisy_labels = PreLabels(name="sms",
-                               data=X_U,
-                               rules=rules,
-                               data_feats=X_feats_U,
-                               labels_enum=pixelLabels,
-                               num_classes=2) #note that we don't pass gold_labels here, for the unlabelled data
-sms_noisy_labels.generate_pickle(U_path_pkl)
-
-from spear.jl import JL
-
-loss_func_mask = [1,1,1,1,1,1,1] 
-'''
-One can keep 0s in places where he don't want the specific loss function to be part
-the final loss function used in training. Refer documentation(spear.JL.core.JL) to understand
-the which index of loss_func_mask refers to what loss function.
-
-Note: the loss_func_mask above may not be the optimal mask for sms dataset. We have to try
-      some other masks too, to find the best one that gives good accuracies.
-'''
-batch_size = 150
-lr_fm = 0.0005
-lr_gm = 0.01
-use_accuracy_score = False
-
-n_features = 10
-n_hidden = 512
-feature_model = 'nn'
-
-jl = JL(path_json = path_json, n_lfs = n_lfs, n_features = n_features, feature_model = feature_model, \
-        n_hidden = n_hidden)
-
-print("Running now for long time")
-
-probs_fm, probs_gm = jl.fit_and_predict_proba(path_L = L_path_pkl, path_U = U_path_pkl, path_V = V_path_pkl, \
-        path_T = T_path_pkl, loss_func_mask = loss_func_mask, batch_size = batch_size, lr_fm = lr_fm, lr_gm = \
-    lr_gm, use_accuracy_score = use_accuracy_score, path_log = log_path_jl_1, return_gm = True, n_epochs = \
-    10, start_len = 7,stop_len = 10, is_qt = True, is_qc = True, qt = 0.9, qc = 0.85, metric_avg = 'binary')
-
-labels = np.argmax(probs_fm, 1)
-print("probs_fm shape: ", probs_fm.shape)
-print("probs_gm shape: ", probs_gm.shape)
-
-
-
-import pickle
-
-
-with open('labels.pickle', 'wb') as handle:
-    pickle.dump(labels, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-
-with open('gm_labels.pickle', 'wb') as handle:
-    pickle.dump(probs_gm, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    ### CAGE Execution
+    for img_file in tqdm(dir_list):
+        # if not (os.path.exists(RESULTS_DIR + img_file)):
+        lf = Labeling(imgfile=img_file, model=MODEL)
+        get_JL_label(img_file, lf.pixels)
+        get_bboxes(img_file)
+        break
 
 
