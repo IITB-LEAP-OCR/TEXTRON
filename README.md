@@ -69,7 +69,7 @@ TEXTRON yields a better overall performance and also shows significant improveme
 
 1. Run pip install -r requriements.txt
 2. Make the configurations as stated in **config.py**
-   1. Create a directory outside the main project directory, **data** with a sub-directory **temp**
+   1. Create a directory outside the main project directory, **data**, with a sub-directory **temp**
    2. Within **temp**, create 2 sub-directories, **img** and **txt**
        - Place your input images in the _img_ sub-directory and the corresponding ground truth labels (if available) in the _txt_ sub-directory
             - In case ground truth isn't available, set **GROUND_TRUTH_AVAILABLE** within config.py as `False`
