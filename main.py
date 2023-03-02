@@ -15,7 +15,7 @@ from spear.spear.labeling import LFSet, PreLabels
 from spear.spear.cage import Cage
 
 from data_processing import Labeling, pixelLabels
-from post_processing import get_bboxes
+from post_processing import get_bboxes, coco_conversion
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -312,6 +312,8 @@ if __name__ == "__main__":
         print(lf)
         cage(img_file, lf.pixels)
         get_bboxes(img_file)
+    
+    coco_conversion()
 
     subprocess.run(["python","./iou-results/pascalvoc.py","-gt", '../' + GROUND_TRUTH_DIR, "-det", '../' + OUT_TXT_DIR])
 

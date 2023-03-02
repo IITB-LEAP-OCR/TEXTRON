@@ -4,6 +4,9 @@ import skimage.io as io
 import pandas as pd
 import numpy as np
 from numpy import invert
+import json
+
+
 
 ### Postprocessing Step
 def get_bboxes(file):
@@ -46,3 +49,60 @@ def get_bboxes(file):
     name = file[:len(file) - 4]
     io.imsave(PREDICTIONS_DIR + name + '_pred.jpg', final_img)
     df.to_csv(OUT_TXT_DIR + name + '.txt', sep=' ',index=False, header=False)
+    
+
+def coco_conversion():
+    coco_dict = {
+    "info": {"description": "TEXTRON : Improving Multi-Lingual Text Detection through Data Programming"},
+    "licenses": [],
+    "categories": [],
+    "images": [],
+    "annotations": []
+    }
+
+    # Add category information
+    category_dict = {
+        "id": 1,
+        "name": "word",
+        "supercategory": "text"
+    }
+
+    img_id = 0
+    for file in os.listdir(INPUT_IMG_DIR):
+        # Add image and annotation information
+        
+        img = io.imread(INPUT_IMG_DIR + file)
+        height, width, _ = img.shape
+        img_id += 1
+        image_dict = {
+            "id": img_id,
+            "width": width,
+            "height": height,
+            "file_name": file
+        }
+        coco_dict["images"].append(image_dict)
+        
+        # Read the annotations/ bbox info. from the corresponding CSV file
+        name = file[:len(file) - 4]
+        df = pd.read_csv(OUT_TXT_DIR + name + '.txt', sep=' ', names = ['label', 'confidence', 'X', 'Y', 'W', 'H'])
+
+        # Create a list of annotations for the current image
+        annotations = []
+        for i, row in df.iterrows():
+            annotation_dict = {
+                "id": i + 1,
+                "image_id": img_id,
+                "category_id": 1,
+                "bbox": [int(row['X']), int(row['Y']), int(row['W']), int(row['H'])],
+                "area": int(row['W']) * int(row['H']),
+                "iscrowd": 0
+            }
+            annotations.append(annotation_dict)
+        coco_dict["annotations"].extend(annotations)    
+
+    coco_dict["categories"].append(category_dict)
+
+
+    # Write the dictionary to a JSON file
+    with open(RESULTS_DATA_DIR + "coco_output.json", "w") as f:
+        json.dump(coco_dict, f)
