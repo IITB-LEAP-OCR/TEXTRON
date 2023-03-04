@@ -4,11 +4,11 @@ torch.cuda.empty_cache()
 
 
 ### Path to the Data and Results directories
-INPUT_DATA_DIR    = './../processed/docbank_100/'
+INPUT_DATA_DIR    = './../data/temp/'
 RESULTS_DATA_DIR  = './../results/'
 
 ### Keep True if True labels are available, else False
-GROUND_TRUTH_AVAILABLE = True
+GROUND_TRUTH_AVAILABLE = False
 
 ### Path to images and the ground truths
 INPUT_IMG_DIR    = os.path.join(INPUT_DATA_DIR, 'images/')

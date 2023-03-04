@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 import pandas as pd
 
-from skimage import io, filters, morphology
+from skimage import io, filters, morphology, img_as_ubyte
 from skimage.util import invert
 from skimage.morphology import convex_hull_image
 from skimage.feature import canny
@@ -49,9 +49,9 @@ def get_image_edges(image, width_threshold, height_threshold, thickness):
     image = invert(image)
     edges = filters.sobel(image)
     edges = pure_binarize(edges)
-    io.imsave("temp.jpg", edges)
-    image = cv2.imread("temp.jpg")
-    return get_boxes(image, width_threshold, height_threshold, thickness, "double")
+    # Convert 2D numpy array to 3-channel image
+    cv_image = cv2.cvtColor(img_as_ubyte(edges), cv2.COLOR_GRAY2BGR)
+    return get_boxes(cv_image, width_threshold, height_threshold, thickness, "double")
 
 
 def get_pillow_image_edges(image, width_threshold, height_threshold):
@@ -68,9 +68,9 @@ def get_pillow_image_edges(image, width_threshold, height_threshold):
     edges = image.filter(ImageFilter.FIND_EDGES)
     edges = np.array(edges)
     edges = pure_binarize(edges)
-    io.imsave("temp.jpg", edges)
-    image = cv2.imread("temp.jpg")
-    return get_boxes(image, width_threshold, height_threshold, "double")
+    # Convert 2D numpy array to 3-channel image
+    cv_image = cv2.cvtColor(img_as_ubyte(edges), cv2.COLOR_GRAY2BGR)
+    return get_boxes(cv_image, width_threshold, height_threshold, type="double")
 
 
 def get_segmentation_labels(image, width_threshold, height_threshold, thickness):
@@ -78,9 +78,9 @@ def get_segmentation_labels(image, width_threshold, height_threshold, thickness)
     edges = canny(image)
     image = ndi.binary_fill_holes(edges)
     image = pure_binarize(image)
-    io.imsave("temp.jpg", image)
-    image = cv2.imread("temp.jpg")
-    return get_boxes(image, width_threshold, height_threshold, thickness, "double")
+    # Convert 2D numpy array to 3-channel image
+    cv_image = cv2.cvtColor(img_as_ubyte(image), cv2.COLOR_GRAY2BGR)
+    return get_boxes(cv_image, width_threshold, height_threshold, thickness, "double")
 
 
 def get_contour_labels(image, width_threshold, height_threshold, thickness):
