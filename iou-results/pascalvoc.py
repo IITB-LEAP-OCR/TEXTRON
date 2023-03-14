@@ -52,9 +52,9 @@ import shutil
 import sys
 
 import _init_paths
-from BoundingBox import BoundingBox
-from BoundingBoxes import BoundingBoxes
-from Evaluator import *
+from util.BoundingBox import BoundingBox
+from util.BoundingBoxes import BoundingBoxes
+from util.Evaluator import *
 from utils import BBFormat
 
 
