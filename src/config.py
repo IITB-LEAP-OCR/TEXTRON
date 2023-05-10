@@ -4,7 +4,7 @@ torch.cuda.empty_cache()
 
 
 ### Path to the Data and Results directories
-INPUT_DATA_DIR    = './../data/temp/'
+INPUT_DATA_DIR    = './../../datasets/docbank/'
 RESULTS_DATA_DIR  = './../results/'
 
 ### Keep True if True labels are available, else False
@@ -59,3 +59,5 @@ lab_funcs = [
 ]
 
 QUALITY_GUIDE = [0.85, 0.9, 0.95]
+
+PARAMS_PATH = './cage/' + os.path.basename(os.path.normpath(INPUT_DATA_DIR)) + '_params.pkl'

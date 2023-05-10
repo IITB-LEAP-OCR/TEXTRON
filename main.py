@@ -298,7 +298,11 @@ def cage(file, X):
     x,y,_ = Y.shape
 
     labels = labels.reshape(x,y)
-    io.imsave(RESULTS_DIR + file, labels)
+    im = Image.fromarray((labels * 255).astype(np.uint8))
+    im.save(RESULTS_DIR + file)
+
+    # cage.save_params(save_path = PARAMS_PATH)
+    # io.imsave(RESULTS_DIR + file, labels)
 
 
 ### Main Code
