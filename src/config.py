@@ -44,7 +44,7 @@ LUMINOSITY = 1.0
 
 ### Choose the Labeling Functions which should be run
 lab_funcs = [ 
-   "CONVEX_HULL_LABEL_PURE", 
+   # "CONVEX_HULL_LABEL_PURE", 
    # "CONVEX_HULL_LABEL_NOISE", 
    # "EDGES_LABEL", 
    # "EDGES_LABEL_REVERSE", 
@@ -58,6 +58,12 @@ lab_funcs = [
    # "SEGMENTATION_LABEL"
 ]
 
-QUALITY_GUIDE = [0.85, 0.9, 0.95]
+QUALITY_GUIDE = [ 0.9, 0.95]
 
-PARAMS_PATH = './cage/' + os.path.basename(os.path.normpath(INPUT_DATA_DIR)) + '_params.pkl'
+SPLIT_THRESHOLD = 0.80
+
+PARAMS_PATH     = os.path.join(RESULTS_DATA_DIR, "params/")
+if not os.path.exists(PARAMS_PATH):   
+   os.makedirs(PARAMS_PATH)
+
+PARAMS_FILE = PARAMS_PATH +  os.path.basename(os.path.normpath(INPUT_DATA_DIR)) + '_' + str(RESULT_VALUE) + '_params.pkl'
