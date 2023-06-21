@@ -241,7 +241,7 @@ def cage(file, X, only_pred):
 
     if(GROUND_TRUTH_AVAILABLE):
         if('docbank' in INPUT_DATA_DIR) or 'testing_sample' in INPUT_DATA_DIR:
-            name = file[:len(file) - 4]
+            name = file[:len(file) - 8]
             df = pd.read_csv(GROUND_TRUTH_DIR+name+'.txt', delimiter=' ',
                             names=["token", "x0", "y0", "x1", "y1", "R", "G", "B", "font name", "label"])
 
@@ -298,45 +298,46 @@ def cage(file, X, only_pred):
 
     if not (only_pred):
         probs = cage.fit_and_predict_proba(path_pkl = U_path_pkl, path_test = T_path_pkl, path_log = log_path_cage_1, \
-                                    qt = prob_arr, qc = prob_arr, metric_avg = ['binary'], n_epochs = 2, lr = 0.01)
+                                    qt = prob_arr, qc = prob_arr, metric_avg = ['binary'], n_epochs = 50, lr = 0.01)
+        cage.save_params(save_path = PARAMS_FILE)
     else:
+        print("hello")
         probs = cage.predict_proba(path_test = T_path_pkl, qc = prob_arr)
 
     labels = np.argmax(probs, 1)
     x,y,_ = Y.shape
-
     labels = labels.reshape(x,y)
+    
     im = Image.fromarray((labels * 255).astype(np.uint8))
     im.save(RESULTS_DIR + file)
-
-    cage.save_params(save_path = PARAMS_FILE)
-    # io.imsave(RESULTS_DIR + file, labels)
 
 
 ### Main Code
 if __name__ == "__main__":
     dir_list = os.listdir(INPUT_IMG_DIR)
 
-    random.shuffle(dir_list)
+    # random.shuffle(dir_list)
 
-    data_size  = len(dir_list)
-    test_split = int((data_size+1)*SPLIT_THRESHOLD)
-    train_data = dir_list[:test_split] #Remaining 80% to training set
-    test_data  = dir_list[test_split:] #Splits 20% data to test set
+    # data_size  = len(dir_list)
+    # test_split = int((data_size+1)*SPLIT_THRESHOLD)
+    # train_data = dir_list[:test_split] #Remaining 80% to training set
+    # test_data  = dir_list[test_split:] #Splits 20% data to test set
+    
+    if not (ONLY_PRED):
 
-    ### CAGE Execution
-    for img_file in tqdm(train_data):
-        # if not (os.path.exists(RESULTS_DIR + img_file)):
-        lf = Labeling(imgfile=img_file, model=MODEL)
-        cage(img_file, lf.pixels, only_pred=False)
-        get_bboxes(img_file)
-
-    ### Predictions on Test
-    print(test_data)
-    for img_file in tqdm(test_data):
-        lf = Labeling(imgfile=img_file, model=MODEL)
-        cage(img_file, lf.pixels, only_pred=True)
-        get_bboxes(img_file)
+        ### CAGE Execution
+        for img_file in tqdm(dir_list):
+            if not (os.path.exists(RESULTS_DIR + img_file)):
+                lf = Labeling(imgfile=img_file, model=MODEL)
+                cage(img_file, lf.pixels, only_pred=False)
+                get_bboxes(img_file)
+            
+    else:
+        ### Predictions on Test
+        for img_file in tqdm(dir_list):
+            lf = Labeling(imgfile=img_file, model=MODEL)
+            cage(img_file, lf.pixels, only_pred=True)
+            get_bboxes(img_file)
     
     coco_conversion()
 

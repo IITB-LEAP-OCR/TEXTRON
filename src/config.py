@@ -60,10 +60,12 @@ lab_funcs = [
 
 QUALITY_GUIDE = [ 0.9, 0.95]
 
-SPLIT_THRESHOLD = 0.80
 
 PARAMS_PATH     = os.path.join(RESULTS_DATA_DIR, "params/")
 if not os.path.exists(PARAMS_PATH):   
    os.makedirs(PARAMS_PATH)
 
 PARAMS_FILE = PARAMS_PATH +  os.path.basename(os.path.normpath(INPUT_DATA_DIR)) + '_' + str(RESULT_VALUE) + '_params.pkl'
+
+ONLY_PRED = False
+SPLIT_THRESHOLD = 1.0
