@@ -164,6 +164,8 @@ def get_existing_doctr_labels(ann_dir,imgfile, image, width_threshold, height_th
     for _,a in df.iterrows():
         cv2.rectangle(image, (int(a['X']), int(a['Y'])), (int(a['X']+a['W']), int(a['Y']+a['H'])), (0, 0, 0),-1)
     image = pure_binarize(image)
+    print('Tess LF Output')
+    print(image)
     return image
 
 

@@ -7,8 +7,8 @@ from PIL import Image
 import enum
 
 class pixelLabels(enum.Enum):
-    TEXT = 1
-    NOT_TEXT = 0
+    TEXT = 0
+    NOT_TEXT = 1
 
 
 class Labeling:
@@ -21,6 +21,7 @@ class Labeling:
         self.EDGES        = get_image_edges(image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD, THICKNESS)
         # self.PILLOW_EDGES = get_pillow_image_edges(image2, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
         self.CONTOUR      = get_contour_labels(image3, WIDTH_THRESHOLD, HEIGHT_THRESHOLD, THICKNESS)
+        # self.CONTOUR_REVERSE      = get_contour_labels(image3, WIDTH_THRESHOLD, HEIGHT_THRESHOLD, THICKNESS)
         self.TITLE_CONTOUR = get_title_contour_labels(image3, WIDTH_THRESHOLD, HEIGHT_THRESHOLD, 7)
         self.DOCTR        = get_doctr_labels(model, self.imgfile, image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
         # self.DOCTR        = get_existing_doctr_labels(ANN_DOCTR_DIR, imgfile, image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)

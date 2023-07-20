@@ -45,7 +45,6 @@ def get_pillow_edges_info(x):
 def get_doctr_info(x):
     return lf.DOCTR[x[0]][x[1]]
 
-
 @preprocessor()
 def get_tesseract_info(x):
     return lf.TESSERACT[x[0]][x[1]]
@@ -53,6 +52,7 @@ def get_tesseract_info(x):
 @preprocessor()
 def get_contour_info(x):
     return lf.CONTOUR[x[0]][x[1]]
+
 
 @preprocessor()
 def get_title_contour_info(x):
@@ -74,7 +74,7 @@ def get_segmentation_info(x):
 
 @labeling_function(label = pixelLabels.NOT_TEXT, pre=[get_chull_info], name="CHULL_PURE")
 def CONVEX_HULL_LABEL_PURE(pixel):
-    if(pixel):
+    if(not pixel):
         return pixelLabels.NOT_TEXT
     else:
         return ABSTAIN
@@ -96,10 +96,10 @@ def EDGES_LABEL(pixel):
 
 @labeling_function(label = pixelLabels.NOT_TEXT, pre=[get_edges_info], name="SKIMAGE_EDGES_REVERSE")
 def EDGES_LABEL_REVERSE(pixel):
-    if(pixel):
-        return ABSTAIN
-    else:
+    if(not pixel):
         return pixelLabels.NOT_TEXT
+    else:
+        return ABSTAIN
     
     
 @labeling_function(label=pixelLabels.TEXT, pre=[get_pillow_edges_info], name="PILLOW_EDGES")
@@ -120,30 +120,44 @@ def PILLOW_EDGES_LABEL_REVERSE(pixel):
 
 @labeling_function(label=pixelLabels.TEXT, pre=[get_doctr_info], name="DOCTR")
 def DOCTR_LABEL(pixel):
-    if(pixel):
+    if(not pixel):
         return pixelLabels.TEXT
     else:
         return ABSTAIN
 
-@labeling_function(label=pixelLabels.TEXT, pre=[get_doctr_info], name="DOCTR2")
-def DOCTR_LABEL2(pixel):
+@labeling_function(label=pixelLabels.NOT_TEXT, pre=[get_doctr_info], name="DOCTR_REVERSE")
+def DOCTR_LABEL_REVERSE(pixel):
     if(pixel):
-        return pixelLabels.TEXT
+        return pixelLabels.NOT_TEXT
     else:
         return ABSTAIN
 
 
 @labeling_function(label=pixelLabels.TEXT, pre=[get_tesseract_info], name="TESSERACT")
 def TESSERACT_LABEL(pixel):
-    if(pixel):
+    if(not pixel):
         return pixelLabels.TEXT
+    else:
+        return ABSTAIN
+    
+@labeling_function(label=pixelLabels.NOT_TEXT, pre=[get_tesseract_info], name="TESSERACT_REVERSE")
+def TESSERACT_LABEL_REVERSE(pixel):
+    if(pixel):
+        return pixelLabels.NOT_TEXT
     else:
         return ABSTAIN
 
 @labeling_function(label=pixelLabels.TEXT, pre=[get_contour_info], name="CONTOUR")
 def CONTOUR_LABEL(pixel):
-    if(pixel):
+    if(not pixel):
         return pixelLabels.TEXT
+    else:
+        return ABSTAIN
+
+@labeling_function(label=pixelLabels.NOT_TEXT, pre=[get_contour_info], name="CONTOUR_REVERSE")
+def CONTOUR_LABEL_REVERSE(pixel):
+    if(pixel):
+        return pixelLabels.NOT_TEXT
     else:
         return ABSTAIN
 
@@ -153,6 +167,7 @@ def CONTOUR_TITLE_LABEL(pixel):
         return pixelLabels.TEXT
     else:
         return ABSTAIN
+    
 
 @labeling_function(label=pixelLabels.NOT_TEXT, pre=[get_mask_holes_info], name="MASK_HOLES")
 def MASK_HOLES_LABEL(pixel):
@@ -170,8 +185,15 @@ def MASK_OBJECTS_LABEL(pixel):
 
 @labeling_function(label=pixelLabels.TEXT, pre=[get_segmentation_info], name="SEGMENTATION")
 def SEGMENTATION_LABEL(pixel):
-    if(pixel):
+    if(not pixel):
         return pixelLabels.TEXT
+    else:
+        return ABSTAIN
+    
+@labeling_function(label=pixelLabels.NOT_TEXT, pre=[get_segmentation_info], name="SEGMENTATION_REVERSE")
+def SEGMENTATION_LABEL_REVERSE(pixel):
+    if(pixel):
+        return pixelLabels.NOT_TEXT
     else:
         return ABSTAIN
 
@@ -218,8 +240,6 @@ def analysis(img):
 
     result = analyse.head(16)
     result["image"] = img
-
-    print(result)
     return result
 
 
@@ -298,7 +318,7 @@ def cage(file, X, only_pred):
 
     if not (only_pred):
         probs = cage.fit_and_predict_proba(path_pkl = U_path_pkl, path_test = T_path_pkl, path_log = log_path_cage_1, \
-                                    qt = prob_arr, qc = prob_arr, metric_avg = ['binary'], n_epochs = 2, lr = 0.01)
+                                    qt = prob_arr, qc = prob_arr, metric_avg = ['binary'], n_epochs = 100, lr = 0.01)
     else:
         probs = cage.predict_proba(path_test = T_path_pkl, qc = prob_arr)
 
@@ -306,10 +326,12 @@ def cage(file, X, only_pred):
     x,y,_ = Y.shape
 
     labels = labels.reshape(x,y)
+    print(labels)
     im = Image.fromarray((labels * 255).astype(np.uint8))
     im.save(RESULTS_DIR + file)
 
-    cage.save_params(save_path = PARAMS_FILE)
+    if not only_pred:
+        cage.save_params(save_path = PARAMS_FILE)
     # io.imsave(RESULTS_DIR + file, labels)
 
 
@@ -325,17 +347,17 @@ if __name__ == "__main__":
     test_data  = dir_list[test_split:] #Splits 20% data to test set
 
     ### CAGE Execution
-    for img_file in tqdm(train_data):
-        # if not (os.path.exists(RESULTS_DIR + img_file)):
-        lf = Labeling(imgfile=img_file, model=MODEL)
-        cage(img_file, lf.pixels, only_pred=False)
-        get_bboxes(img_file)
+    # for img_file in tqdm(train_data):
+    #     # if not (os.path.exists(RESULTS_DIR + img_file)):
+    #     lf = Labeling(imgfile=img_file, model=MODEL)
+    #     cage(img_file, lf.pixels, only_pred=False)
+    #     get_bboxes(img_file)
 
     ### Predictions on Test
     print(test_data)
     for img_file in tqdm(test_data):
         lf = Labeling(imgfile=img_file, model=MODEL)
-        cage(img_file, lf.pixels, only_pred=True)
+        cage(img_file, lf.pixels, only_pred=False)
         get_bboxes(img_file)
     
     coco_conversion()
