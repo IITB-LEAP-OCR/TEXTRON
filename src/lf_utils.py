@@ -80,7 +80,7 @@ def get_segmentation_labels(image, width_threshold, height_threshold, thickness)
     image = pure_binarize(image)
     # Convert 2D numpy array to 3-channel image
     cv_image = cv2.cvtColor(img_as_ubyte(image), cv2.COLOR_GRAY2BGR)
-    return get_boxes(cv_image, width_threshold, height_threshold, thickness, "double")
+    return get_boxes(cv_image, width_threshold, height_threshold, thickness, type="double")
 
 
 def get_contour_labels(image, width_threshold, height_threshold, thickness):
@@ -94,7 +94,7 @@ def get_contour_labels(image, width_threshold, height_threshold, thickness):
     Returns:
         numpy.ndarray: A binary image as a NumPy array with white pixels indicating the text regions.
     """
-    return get_boxes(image, width_threshold, height_threshold, thickness, "double")
+    return get_boxes(image, width_threshold, height_threshold, thickness, "single")
 
 
 def get_title_contour_labels(image, width_threshold, height_threshold, thickness):

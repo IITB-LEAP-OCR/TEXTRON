@@ -160,7 +160,7 @@ def get_boxes(image, width_threshold, height_threshold, thickness=4, type="doubl
         #For English DocBank use the below one
         # if (w < width/2):
         # For multilingual
-        if (cv2.contourArea(c)) > (width*height)/100000 and h<(height/4) and (w < width/2) and cv2.contourArea(c)>35:
+        if (cv2.contourArea(c)) > (width*height)/100000 and h<(height/4) and (w < width/2) and h > (height/100) and w > (width/200):
         #for funsd
         # if (cv2.contourArea(c)) > 30:
             bboxes.append([x, y, w, h])
@@ -210,7 +210,8 @@ def save_image(img, width_threshold, height_threshold, final_img, name):
         w = int(w*(0.95/width_threshold))
         h = int(h*(0.8/height_threshold))
         # Make sure contour area is large enough
-        if (cv2.contourArea(c)) > 25 and (cv2.contourArea(c) < 5000):
+        if (cv2.contourArea(c)) > (width*height)/100000 and h<(height/4) and (w < width/2) and cv2.contourArea(c)>35:
+        #(cv2.contourArea(c)) > 25 and (cv2.contourArea(c) < 5000):
             bboxes.append(['text',1,x, y, w, h])
 
     for b in bboxes:
