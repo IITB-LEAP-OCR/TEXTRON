@@ -21,6 +21,7 @@ def get_bboxes(file):
 
     # To detect object contours, we want a black background and a white foreground, so we invert the image (i.e. 255 - pixel value)
     inverted_binary = ~binary
+    width, height = inverted_binary.shape
 
     # Find the contours on the inverted binary image, and store them in a list
     # Contours are drawn around white blobs. hierarchy variable contains info on the relationship between the contours
@@ -34,7 +35,7 @@ def get_bboxes(file):
         w = int(w*(1/WIDTH_THRESHOLD))
         h = int(h*(1/HEIGHT_THRESHOLD))
         # Make sure contour area is large enough
-        if cv2.contourArea(c) > 30:
+        if (cv2.contourArea(c)) > (width*height)/100000 and h<(height/4) and (w < width/2) and cv2.contourArea(c)>30:
             bboxes.append(['text',1,x, y, w, h])
 
     final_img = cv2.imread(INPUT_IMG_DIR + file)
