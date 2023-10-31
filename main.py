@@ -15,8 +15,8 @@ from spear.spear.labeling import labeling_function, ABSTAIN, preprocessor
 from spear.spear.labeling import LFSet, PreLabels
 from spear.spear.cage import Cage
 
-from data_processing import Labeling, pixelLabels
-from post_processing import get_bboxes, coco_conversion
+from src.data_processing import Labeling, pixelLabels
+from src.post_processing import get_bboxes, coco_conversion
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -224,12 +224,12 @@ def analysis(img):
             h = int((y1-y0)*HEIGHT_THRESHOLD)
             cv2.rectangle(Y, (x0, y0), (x0+w, y0+h), (0, 0, 0), cv2.FILLED)
 
-    gold_label = get_label(Y)
+    #gold_label = get_label(Y)
 
     td_noisy_labels = PreLabels(name="TD",
                                data=lf.pixels,
                                rules=rules,
-                               gold_labels=gold_label,
+                               #gold_labels=gold_label,
                                labels_enum=pixelLabels,
                                num_classes=2)
 
@@ -369,17 +369,17 @@ if __name__ == "__main__":
             cage(img_file, lf.pixels, only_pred=PRED_ONLY)
             get_bboxes(img_file)
     
-    coco_conversion()
+    # coco_conversion()
 
-    subprocess.run(["python","./iou-results/pascalvoc.py","-gt", '../' + GROUND_TRUTH_DIR, "-det", '../' + OUT_TXT_DIR])
+    #subprocess.run(["python3","./iou-results/pascalvoc.py","-gt", '../' + GROUND_TRUTH_DIR, "-det", '../' + OUT_TXT_DIR])
 
-    ### SPEAR EXECUTION
-    #df = pd.DataFrame()
-    #for img in tqdm(dir_list):
+    ## SPEAR EXECUTION
+    # df = pd.DataFrame()
+    # for img in tqdm(dir_list):
     #    lf = Labeling(imgfile=img, model=MODEL)
     #    result = analysis(img)
     #    df = df.append(result)
 
-    #df.to_csv("results_only_some.csv",index=False)
+    # df.to_csv("results_only_some.csv",index=False)
 
     
