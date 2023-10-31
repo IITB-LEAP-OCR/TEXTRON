@@ -4,9 +4,13 @@ torch.cuda.empty_cache()
 
 
 ### Path to the Data and Results directories
-INPUT_DATA_DIR    = '/data/DHRUV/TEXTRON-Results/'
+# INPUT_DATA_DIR    = '/data/BADRI/detection/datasets/Gujarati/processed/train/'
+INPUT_DATA_DIR = '/data/BADRI/DETECTION/datasets/PhDIndic11_Telugu/processed/'
+#'/data/BADRI/devanagari/'
+#'/data/BADRI/detection/datasets/train/doctr_5000/'
 # INPUT_DATA_DIR = '/data/BADRI/datasets/docbank/docbank_prefix_10/original'
 # INPUT_DATA_DIR = '/data/DHRUV/dataset/all/'
+# INPUT_DATA_DIR = '/data/DHRUV/dataset/funsd_T/'
 RESULTS_DATA_DIR  = '/data/DHRUV/TEXTRON-Results/cageresults/'
 
 ### Keep True if True labels are available, else False
@@ -18,17 +22,19 @@ GROUND_TRUTH_DIR = os.path.join(INPUT_DATA_DIR, 'txt/')
 
 
 ### Directories for resultant predictions
+# MODEL = 'FUNDS_SAP_8LF'
 MODEL = 'TEXTRON-Results_SAP_8LF'
-RESULT_VALUE    =  'ALL_SAP_8LF_TEST4'
+# RESULT_VALUE    =  'Gujarati'
+RESULT_VALUE = 'Badri_telugu_6_6'
 
 ## Train or Test Flag
 PRED_ONLY = True
-CAGE_EPOCHS = 100
+CAGE_EPOCHS = 50
 
 
-RESULTS_DIR     = os.path.join(RESULTS_DATA_DIR, 'cage/results' + str(RESULT_VALUE) + '/')
-OUT_TXT_DIR     = os.path.join(RESULTS_DATA_DIR, "txt/txt" + str(RESULT_VALUE) + '/')
-PREDICTIONS_DIR = os.path.join(RESULTS_DATA_DIR, "predictions/predictions" + str(RESULT_VALUE) + '/')
+RESULTS_DIR     = os.path.join(RESULTS_DATA_DIR, 'cage/' + str(RESULT_VALUE) + '/')
+OUT_TXT_DIR     = os.path.join(RESULTS_DATA_DIR, "txt/" + str(RESULT_VALUE) + '/')
+PREDICTIONS_DIR = os.path.join(RESULTS_DATA_DIR, "predictions/" + str(RESULT_VALUE) + '/')
 
 
 # Create a new directory if it does not exist already
@@ -39,12 +45,12 @@ if not os.path.exists(RESULTS_DIR):
 
 
 ### Hyperparameters for Shrinkage threshold on LF outputs
-WIDTH_THRESHOLD = 0.85
-HEIGHT_THRESHOLD = 0.75
+WIDTH_THRESHOLD = 1
+HEIGHT_THRESHOLD = 0.9
 
 ### Hyperparameter for Contour thickness to generate bboxes
-CONTOUR_THICKNESS = 4
-SEGMENT_THICKNESS = 3
+CONTOUR_THICKNESS = 6
+SEGMENT_THICKNESS = 6
 
 ### This is used when already DL model results are present, to save time
 ANN_DOCTR_DIR = './../testing_sample/doctr_txt/'
@@ -56,8 +62,8 @@ LUMINOSITY = 1.0
 lab_funcs = [ 
    # "CONVEX_HULL_LABEL_PURE", 
    # "CONVEX_HULL_LABEL_NOISE", 
-   # "EDGES_LABEL", 
-   # "EDGES_LABEL_REVERSE",
+   #"EDGES_LABEL", 
+   #"EDGES_LABEL_REVERSE",
    # "EDGES_LABEL_REVERSE", 
    # "PILLOW_EDGES_LABEL", 
    # "PILLOW_EDGES_LABEL_REVERSE",
@@ -74,7 +80,11 @@ lab_funcs = [
    "SEGMENTATION_LABEL_REVERSE"
 ]
 
-QUALITY_GUIDE = [0.95, 0.99, 0.85, 0.99, 0.85, 0.99, 0.75, 0.99]
+QUALITY_GUIDE = [0.9, 0.95, 0.75, 0.95, 0.85, 0.95, 0.85, 0.95]
+# [0.99, 0.99, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8]
+#[0.9, 0.95, 0.75, 0.95, 0.85, 0.95, 0.85, 0.95]
+# [0.99, 0.99, 0.01, 0.01, 0.99, 0.99, 0.01, 0.01]
+# 8LF new [0.9, 0.95, 0.75, 0.95, 0.85, 0.95, 0.85, 0.95]
 # 8LF [0.95, 0.99, 0.95, 0.99, 0.75, 0.99, 0.1, 0.99]
 # [0.85, 0.9, 0.95, 0.99]
 # QUALITY_GUIDE =  [0.8, 0.8, 0.85, 0.95, 0.8, 0.95, 0.8, 0.95, 0.85, 0.9]

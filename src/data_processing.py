@@ -18,7 +18,7 @@ class Labeling:
         image2 = Image.open(self.imgfile)
         image3 = cv2.imread(self.imgfile)
         self.CHULL        = get_convex_hull(image)
-        self.EDGES        = get_image_edges(image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD, CONTOUR_THICKNESS)
+        self.EDGES        = get_image_edges(image, WIDTH_THRESHOLD, HEIGHT_THRESHOLD, SEGMENT_THICKNESS)
         # self.PILLOW_EDGES = get_pillow_image_edges(image2, WIDTH_THRESHOLD, HEIGHT_THRESHOLD)
         self.CONTOUR      = get_contour_labels(image3, WIDTH_THRESHOLD, HEIGHT_THRESHOLD, CONTOUR_THICKNESS)
         # self.CONTOUR_REVERSE      = get_contour_labels(image3, WIDTH_THRESHOLD, HEIGHT_THRESHOLD, THICKNESS)
