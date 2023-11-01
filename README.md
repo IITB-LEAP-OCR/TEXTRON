@@ -67,7 +67,7 @@ TEXTRON yields a better overall performance and also shows significant improveme
 
 # Installation and Implementation
 
-1. Run pip install -r requriements.txt
+1. Run ```pip install -r requriements.txt``
 2. Make the configurations as stated in **config.py**
    1. Create a directory outside the main project directory, **data**, with a sub-directory **temp**
    2. Within **temp**, create 2 sub-directories, **img** and **txt**
