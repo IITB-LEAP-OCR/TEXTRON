@@ -1,13 +1,34 @@
-# TEXTRON : Improving Multi-Lingual Text Detection through Data Programming
+# TEXTRON: Weakly Supervised Multilingual Text Detection through Data Programming
 
-Data Programming for Text Detection in Documents using [CAGE](https://arxiv.org/abs/1911.09860)
+Data Programming for Text Detection in Documents using [CAGE](https://arxiv.org/abs/1911.09860). The work includes usage of CAGE from [SPEAR](https://github.com/decile-team/spear) to detect text within documents accurately, which can be used in creation of large benchmark datasets for Text detection task for any down stream tasks.
 
-# IDEA
+## ABSTRACT
 
-The work includes usage of CAGE from [SPEAR](https://github.com/decile-team/spear) to detect text within documents accurately, which can be used in creation of large benchmark datasets for Text detection task for any down stream tasks.
+Several recent deep learning (DL) based techniques perform considerably well on image-based multilingual text detection. However, their performance relies heavily on the availability and quality of training data. There are numerous types of page-level document images consisting of information in several modalities, languages, fonts, and layouts. This makes text detection a challenging problem in the field of computer vision (CV), especially for low-resource or handwritten languages. Furthermore, there is a scarcity of word-level labeled data for text detection, especially for multilingual settings and Indian scripts that incorporate both printed and handwritten text. Conventionally, Indian script text detection requires training a DL model on plenty of labeled data, but to the best of our knowledge, no relevant datasets are available. Manual annotation of such data requires a lot of time, effort, and expertise. In order to solve this problem, we propose \Textron, a {\em Data Programming-based approach}, where users can plug various text detection methods into a weak supervision-based learning framework. One can view this approach to multilingual text detection as an ensemble of different CV-based techniques and DL approaches. **TEXTRON** can leverage the predictions of DL models pre-trained on a significant amount of language data in conjunction with CV-based methods to improve text detection in other languages. We demonstrate that **TEXTRON** can improve the detection performance for documents written in Indian languages, despite the absence of corresponding labeled data. Further, through extensive experimentation, we show improvement brought about by our approach over the current State-of-the-art (SOTA) models, especially for handwritten Devanagari text.
 
 
-# Methodology
+## Citation
+
+If you use this paper or the accompanying code/data in your research, please cite it as:
+
+\[Insert Citation Information Here\]
+
+## Getting Started
+
+### Installation and Implementation
+
+1. Run ```pip install -r requriements.txt``
+2. Make the configurations as stated in **config.py**
+   1. Create a directory outside the main project directory, **data**, with a sub-directory **temp**
+   2. Within **temp**, create 2 sub-directories, **img** and **txt**
+       - Place your input images in the _img_ sub-directory and the corresponding ground truth labels (if available) in the _txt_ sub-directory
+            - Set the appropriate path for **INPUT_DATA_DIR** in _config.py_
+            - In case ground truth isn't available, set **GROUND_TRUTH_AVAILABLE** within config.py as `False`
+       - Choose the appropriate Labeling functions within config.py file from the **lab_funcs** list and also set the respective quaility quide for CAGE
+3. Finally, run the main.py code to get the predictions in the _results_ folder (outside the main project directory) defined in config.py
+
+
+## Methodology
 
 1. Passing images to the CAGE model, which has several labeling functions which generate weak labels of pixel level information of Image data describing Textual or Non-textual information of the corresponding pixel
 2. Usage of effective post processing steps to generate bounding boxes for the corresponding detected word level text
@@ -15,7 +36,7 @@ The work includes usage of CAGE from [SPEAR](https://github.com/decile-team/spea
 4. Labeling functions could be used as a plug and play model to analyze results of different configurations
 
 
-# Labeling Functions
+## Labeling Functions
 
 - Pretrained Models based Labelling Functions
 - 1. DocTR 
@@ -27,7 +48,13 @@ The work includes usage of CAGE from [SPEAR](https://github.com/decile-team/spea
 - 5. Mask Region based Labeling Function
 - 6. Tesseract Model for Text Detection
 
-# Results
+## Datasets
+
+
+The Datasets could be found at this [link](https://iitbacin-my.sharepoint.com/:f:/g/personal/22m2119_iitb_ac_in/EghqK7T05VdEhQhxAFz9wDAB51FTKm8VDJStPL3ZxoXpQw?e=lVQXeu)
+
+
+## Results
 
 |**Class** | **Coverage%** | **DBNet Model** |**Textron3LF** |**Textron4LF** |
 | :---:   | :---: | :---: | :---:   | :---: |
@@ -57,7 +84,7 @@ Textron results on classwise data of Docbank for 100 test images
 
 TEXTRON yields a better overall performance and also shows significant improvement in detecting classes like equations and footers as compared to DBNet
 
-# References
+## References
 
 1. [SPEAR](https://github.com/decile-team/spear)
 2. [Scikit-Image](https://scikit-image.org/)
@@ -65,14 +92,29 @@ TEXTRON yields a better overall performance and also shows significant improveme
 4. [DocTR](https://github.com/mindee/doctr)
 
 
-# Installation and Implementation
+## License
 
-1. Run ```pip install -r requriements.txt``
-2. Make the configurations as stated in **config.py**
-   1. Create a directory outside the main project directory, **data**, with a sub-directory **temp**
-   2. Within **temp**, create 2 sub-directories, **img** and **txt**
-       - Place your input images in the _img_ sub-directory and the corresponding ground truth labels (if available) in the _txt_ sub-directory
-            - Set the appropriate path for **INPUT_DATA_DIR** in _config.py_
-            - In case ground truth isn't available, set **GROUND_TRUTH_AVAILABLE** within config.py as `False`
-       - Choose the appropriate Labeling functions within config.py file from the **lab_funcs** list and also set the respective quaility quide for CAGE
-3. Finally, run the main.py code to get the predictions in the _results_ folder (outside the main project directory) defined in config.py
+The work has been licensed by GNU license
+
+## Acknowledgements
+
+We wish to Acknowledge IITB annotators for annotating the Text Detection dataset to perform our experiments.
+
+## Authors Contact Information
+
+1. Badri Vishal Kasuba
+2. Dhruv Kudale
+
+## Questions or Issues
+
+we conclude with opening doors to more innovative contributions bringing about seamless multilingual text detection. Thank you for your interest in our research paper!
+
+
+
+
+
+
+
+
+
+
