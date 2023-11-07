@@ -4,14 +4,9 @@ torch.cuda.empty_cache()
 
 
 ### Path to the Data and Results directories
-# INPUT_DATA_DIR    = '/data/BADRI/detection/datasets/Gujarati/processed/train/'
-INPUT_DATA_DIR = '/data/BADRI/DETECTION/datasets/PhDIndic11_Telugu/processed/'
-#'/data/BADRI/devanagari/'
-#'/data/BADRI/detection/datasets/train/doctr_5000/'
-# INPUT_DATA_DIR = '/data/BADRI/datasets/docbank/docbank_prefix_10/original'
-# INPUT_DATA_DIR = '/data/DHRUV/dataset/all/'
-# INPUT_DATA_DIR = '/data/DHRUV/dataset/funsd_T/'
-RESULTS_DATA_DIR  = '/data/DHRUV/TEXTRON-Results/cageresults/'
+INPUT_DATA_DIR = '/data/BADRI/DETECTION/data/TEXTRON_datasets/Handwritten/PhDIndic11_Devanagari/'
+RESULTS_DATA_DIR  = '/data/BADRI/DETECTION/results/'
+
 
 ### Keep True if True labels are available, else False
 GROUND_TRUTH_AVAILABLE = False
@@ -22,20 +17,12 @@ GROUND_TRUTH_DIR = os.path.join(INPUT_DATA_DIR, 'txt/')
 
 
 ### Directories for resultant predictions
-# MODEL = 'FUNDS_SAP_8LF'
-MODEL = 'TEXTRON-Results_SAP_8LF'
-# RESULT_VALUE    =  'Gujarati'
-RESULT_VALUE = 'Badri_telugu_6_6'
-
-## Train or Test Flag
-PRED_ONLY = True
-CAGE_EPOCHS = 50
-
+MODEL = 'SAP_8LF'
+RESULT_VALUE = 'devanagari'
 
 RESULTS_DIR     = os.path.join(RESULTS_DATA_DIR, 'cage/' + str(RESULT_VALUE) + '/')
 OUT_TXT_DIR     = os.path.join(RESULTS_DATA_DIR, "txt/" + str(RESULT_VALUE) + '/')
 PREDICTIONS_DIR = os.path.join(RESULTS_DATA_DIR, "predictions/" + str(RESULT_VALUE) + '/')
-
 
 # Create a new directory if it does not exist already
 if not os.path.exists(RESULTS_DIR):
@@ -43,14 +30,26 @@ if not os.path.exists(RESULTS_DIR):
    os.makedirs(OUT_TXT_DIR)
    os.makedirs(PREDICTIONS_DIR)
 
+## Train or Test Flag
+PRED_ONLY = True
+CAGE_EPOCHS = 50
+PARAMS_LOADED = False
+
+PARAMS_PATH     = os.path.join(RESULTS_DATA_DIR, "params/")
+if not os.path.exists(PARAMS_PATH):   
+   os.makedirs(PARAMS_PATH)
+
+PARAMS_FILE = PARAMS_PATH + str(MODEL) + '_params.pkl'
+
+
 
 ### Hyperparameters for Shrinkage threshold on LF outputs
-WIDTH_THRESHOLD = 1
-HEIGHT_THRESHOLD = 0.9
+WIDTH_THRESHOLD = 0.9
+HEIGHT_THRESHOLD = 0.7
 
 ### Hyperparameter for Contour thickness to generate bboxes
-CONTOUR_THICKNESS = 6
-SEGMENT_THICKNESS = 6
+CONTOUR_THICKNESS = 5
+SEGMENT_THICKNESS = 5
 
 ### This is used when already DL model results are present, to save time
 ANN_DOCTR_DIR = './../testing_sample/doctr_txt/'
@@ -81,6 +80,8 @@ lab_funcs = [
 ]
 
 QUALITY_GUIDE = [0.9, 0.95, 0.75, 0.95, 0.85, 0.95, 0.85, 0.95]
+
+### Other Quality Guides that has been tried out for respective Chosen LFs
 # [0.99, 0.99, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8]
 #[0.9, 0.95, 0.75, 0.95, 0.85, 0.95, 0.85, 0.95]
 # [0.99, 0.99, 0.01, 0.01, 0.99, 0.99, 0.01, 0.01]
@@ -93,8 +94,4 @@ QUALITY_GUIDE = [0.9, 0.95, 0.75, 0.95, 0.85, 0.95, 0.85, 0.95]
 
 SPLIT_THRESHOLD = 0
 
-PARAMS_PATH     = os.path.join(RESULTS_DATA_DIR, "params/")
-if not os.path.exists(PARAMS_PATH):   
-   os.makedirs(PARAMS_PATH)
 
-PARAMS_FILE = PARAMS_PATH + str(MODEL) + '_params.pkl'

@@ -260,19 +260,7 @@ def cage(file, X, only_pred):
     height, width, _ = Y.shape
 
     if(GROUND_TRUTH_AVAILABLE):
-        if False:
-            name = file[:len(file) - 4]
-            df = pd.read_csv(GROUND_TRUTH_DIR+name+'.txt', delimiter=' ',
-                            names=["token", "x0", "y0", "x1", "y1", "R", "G", "B", "font name", "label"])
-
-            for i in range(df.shape[0]):
-                x0, y0, x1, y1  = (df['x0'][i], df['y0'][i], df['x1'][i], df['y1'][i])
-                x0, y0, x1, y1 = (int(x0*width/1000), int(y0*height/1000), int(x1*width/1000), int(y1*height/1000))
-                w = int((x1-x0)*WIDTH_THRESHOLD)
-                h = int((y1-y0)*HEIGHT_THRESHOLD)
-                cv2.rectangle(Y, (x0, y0), (x0+w, y0+h), (0, 0, 0), cv2.FILLED)
-
-        elif os.path.exists(GROUND_TRUTH_DIR+ file[:len(file) - 4] +'.txt'):
+        if os.path.exists(GROUND_TRUTH_DIR+ file[:len(file) - 4] +'.txt'):
             #('Just' in INPUT_DATA_DIR) or 'testing_sample' in INPUT_DATA_DIR and 'cTDaR' not in file
             name = file[:len(file) - 4]
             df = pd.read_csv(GROUND_TRUTH_DIR+name+'.txt', delimiter=' ',
@@ -292,7 +280,7 @@ def cage(file, X, only_pred):
     gold_label = get_label(Y)
 
 
-    path_json = 'sms_json.json'
+    path_json = 'text_classes.json'
     T_path_pkl = 'pickle_T.pkl' #test data - have true labels
     U_path_pkl = 'pickle_U.pkl' #unlabelled data - don't have true labels
 
@@ -318,18 +306,16 @@ def cage(file, X, only_pred):
 
 
     cage = Cage(path_json = path_json, n_lfs = n_lfs)
-
-    print(PARAMS_FILE)
     
     if(os.path.exists(PARAMS_FILE)):
         cage.load_params(load_path = PARAMS_FILE)
         print('loaded params')
 
-    if not (only_pred):
+    if only_pred:
+        probs = cage.predict_proba(path_test = U_path_pkl, qc = prob_arr)
+    else:
         probs = cage.fit_and_predict_proba(path_pkl = U_path_pkl, path_test = T_path_pkl, path_log = log_path_cage_1, \
                                     qt = prob_arr, qc = prob_arr, metric_avg = ['binary'], n_epochs = CAGE_EPOCHS, lr = 0.01)
-    else:
-        probs = cage.predict_proba(path_test = U_path_pkl, qc = prob_arr)
 
     labels = np.argmax(probs, 1)
     x,y,_ = Y.shape
@@ -355,31 +341,32 @@ if __name__ == "__main__":
     test_data  = dir_list[test_split:] #Splits 20% data to test set
 
     ### CAGE Execution
-    # for img_file in tqdm(train_data):
-    #     # if not (os.path.exists(RESULTS_DIR + img_file)):
-    #     lf = Labeling(imgfile=img_file, model=MODEL)
-    #     cage(img_file, lf.pixels, only_pred=False)
-    #     get_bboxes(img_file)
-
+    if(PRED_ONLY==False):
+        for img_file in tqdm(train_data):
+            # if not (os.path.exists(RESULTS_DIR + img_file)):
+            lf = Labeling(imgfile=img_file, model=MODEL)
+            cage(img_file, lf.pixels, only_pred=False)
+            get_bboxes(img_file)
+            
+    
     ### Predictions on Test
-    # print(test_data)
+    test_data = sorted(test_data)
     for img_file in tqdm(test_data):
         if not (os.path.exists(RESULTS_DIR + img_file)):
             lf = Labeling(imgfile=img_file, model=MODEL)
             cage(img_file, lf.pixels, only_pred=PRED_ONLY)
             get_bboxes(img_file)
     
-    # coco_conversion()
+    coco_conversion()
+    subprocess.run(["python3","./iou-results/pascalvoc.py","-gt", '../' + GROUND_TRUTH_DIR, "-det", '../' + OUT_TXT_DIR])
 
-    #subprocess.run(["python3","./iou-results/pascalvoc.py","-gt", '../' + GROUND_TRUTH_DIR, "-det", '../' + OUT_TXT_DIR])
+    # SPEAR EXECUTION
+    df = pd.DataFrame()
+    for img in tqdm(dir_list):
+       lf = Labeling(imgfile=img, model=MODEL)
+       result = analysis(img)
+       df = df.append(result)
 
-    ## SPEAR EXECUTION
-    # df = pd.DataFrame()
-    # for img in tqdm(dir_list):
-    #    lf = Labeling(imgfile=img, model=MODEL)
-    #    result = analysis(img)
-    #    df = df.append(result)
-
-    # df.to_csv("results_only_some.csv",index=False)
+    df.to_csv("results_only_some.csv",index=False)
 
     
