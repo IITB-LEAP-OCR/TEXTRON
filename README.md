@@ -24,7 +24,7 @@ If you use this paper or the accompanying code/data in your research, please cit
        - Place your input images in the _img_ sub-directory and the corresponding ground truth labels (if available) in the _txt_ sub-directory
             - Set the appropriate path for **INPUT_DATA_DIR** in _config.py_
             - In case ground truth isn't available, set **GROUND_TRUTH_AVAILABLE** within config.py as `False`
-       - Choose the appropriate Labeling functions within config.py file from the **lab_funcs** list and also set the respective quaility quide for CAGE
+       - Choose the appropriate Labeling functions within config.py file from the **lab_funcs** list and also set the respective quality quide for CAGE
 3. Finally, run the main.py code to get the predictions in the _results_ folder (outside the main project directory) defined in config.py
 
 
