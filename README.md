@@ -1,14 +1,15 @@
 <div align="center">
 
 <h3 align="center">TEXTRON: Weakly Supervised Multilingual Text Detection through Data Programming</h3>
-</div>
 
-<p align="center">
-  
-  [![arXiv](https://img.shields.io/badge/arXiv-2402.09811-b31b1b.svg)](https://arxiv.org/abs/2402.09811) &nbsp;
-   [![Dataset](https://img.shields.io/badge/%F0%9F%A4%97-Data-yellow)](https://huggingface.co/datasets/badrivishalk/TEXTRON_INDIC_DATASETS)
+<p>  
+
+[![arXiv](https://img.shields.io/badge/arXiv-2402.09811-b31b1b.svg)](https://arxiv.org/abs/2402.09811) &nbsp;
+[![Dataset](https://img.shields.io/badge/%F0%9F%A4%97-Data-yellow)](https://huggingface.co/datasets/badrivishalk/TEXTRON_INDIC_DATASETS) &nbsp;
+[![License](https://img.shields.io/badge/License-GNU-blue)](https://opensource.org/licenses/GPL-3.0) &nbsp;
+[![GitHub](https://img.shields.io/badge/Code-GitHub-blue)](https://github.com/IITB-LEAP-OCR/TEXTRON)
 </p>
-
+</div>
  
 
 
@@ -44,7 +45,7 @@ If you use this paper or the accompanying code/data in your research, please cit
 
 ### Installation and Implementation
 
-1. Run ```pip install -r requriements.txt``
+1. Run ```pip install -r requriements.txt```
 2. Make the configurations as stated in **config.py**
    1. Create a directory outside the main project directory, **data**, with a sub-directory **temp**
    2. Within **temp**, create 2 sub-directories, **img** and **txt**
@@ -52,7 +53,7 @@ If you use this paper or the accompanying code/data in your research, please cit
             - Set the appropriate path for **INPUT_DATA_DIR** in _config.py_
             - In case ground truth isn't available, set **GROUND_TRUTH_AVAILABLE** within config.py as `False`
        - Choose the appropriate Labeling functions within config.py file from the **lab_funcs** list and also set the respective quality quide for CAGE
-3. Finally, run the main.py code to get the predictions in the _results_ folder (outside the main project directory) defined in config.py
+3. Finally, run the `main.py` code to get the predictions in the _results_ folder (outside the main project directory) defined in config.py
 
 
 ## Methodology
