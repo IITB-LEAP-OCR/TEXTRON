@@ -1,4 +1,17 @@
-# TEXTRON: Weakly Supervised Multilingual Text Detection through Data Programming
+<div align="center">
+
+<h3 align="center">TEXTRON: Weakly Supervised Multilingual Text Detection through Data Programming</h3>
+</div>
+
+<p align="center">
+  
+  [![arXiv](https://img.shields.io/badge/arXiv-2402.09811-b31b1b.svg)](https://arxiv.org/abs/2402.09811) &nbsp;
+   [![Dataset](https://img.shields.io/badge/%F0%9F%A4%97-Data-yellow)](https://huggingface.co/datasets/badrivishalk/TEXTRON_INDIC_DATASETS)
+</p>
+
+ 
+
+
 
 Data Programming for Text Detection in Documents using [CAGE](https://arxiv.org/abs/1911.09860). The work includes usage of CAGE from [SPEAR](https://github.com/decile-team/spear) to detect text within documents accurately, which can be used in creation of large benchmark datasets for Text detection task for any down stream tasks.
 
@@ -11,7 +24,21 @@ Several recent deep learning (DL) based techniques perform considerably well on 
 
 If you use this paper or the accompanying code/data in your research, please cite it as:
 
-\[Insert Citation Information Here\]
+```
+@InProceedings{TEXTRON,
+    author    = {Dhruv Kudale and Badri Vishal Kasuba and Venkatapathy Subramanian and Parag Chaudhuri and Ganesh Ramakrishnan},
+    title     = {TEXTRON: Weakly Supervised Multilingual Text Detection Through Data Programming},
+    booktitle = {Proceedings of the IEEE/CVF Winter Conference on Applications of Computer Vision (WACV)},
+    month     = {January},
+    year      = {2024},
+    pages     = {2871-2880},
+    url       = {https://arxiv.org/abs/2402.09811}
+}
+```
+
+
+
+
 
 ## Getting Started
 
@@ -24,7 +51,7 @@ If you use this paper or the accompanying code/data in your research, please cit
        - Place your input images in the _img_ sub-directory and the corresponding ground truth labels (if available) in the _txt_ sub-directory
             - Set the appropriate path for **INPUT_DATA_DIR** in _config.py_
             - In case ground truth isn't available, set **GROUND_TRUTH_AVAILABLE** within config.py as `False`
-       - Choose the appropriate Labeling functions within config.py file from the **lab_funcs** list and also set the respective quaility quide for CAGE
+       - Choose the appropriate Labeling functions within config.py file from the **lab_funcs** list and also set the respective quality quide for CAGE
 3. Finally, run the main.py code to get the predictions in the _results_ folder (outside the main project directory) defined in config.py
 
 
@@ -52,6 +79,8 @@ If you use this paper or the accompanying code/data in your research, please cit
 
 
 The Datasets could be found at this [link](https://iitbacin-my.sharepoint.com/:f:/g/personal/22m2119_iitb_ac_in/EghqK7T05VdEhQhxAFz9wDAB51FTKm8VDJStPL3ZxoXpQw?e=lVQXeu)
+
+Alternatively, Data has been made available at Huggingface [link](https://huggingface.co/datasets/badrivishalk/TEXTRON_INDIC_DATASETS)
 
 
 ## Results
@@ -98,7 +127,10 @@ The work has been licensed by GNU license
 
 ## Acknowledgements
 
-We wish to Acknowledge IITB annotators for annotating the Text Detection dataset to perform our experiments.
+1. We wish to Acknowledge IITB annotators for annotating the Text Detection dataset to perform our experiments.
+2. We acknowledge the support of a grant from IRCC, IIT
+Bombay, and MEITY, Government of India, through the
+National Language Translation Mission-Bhashini project.
 
 ## Authors Contact Information
 
