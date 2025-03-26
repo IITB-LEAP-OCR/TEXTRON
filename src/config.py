@@ -4,8 +4,8 @@ torch.cuda.empty_cache()
 
 
 ### Path to the Data and Results directories
-INPUT_DATA_DIR = '/data/BADRI/DETECTION/data/TEXTRON_datasets/Handwritten/PhDIndic11_Devanagari/'
-RESULTS_DATA_DIR  = '/data/BADRI/DETECTION/results/'
+INPUT_DATA_DIR = 'TEXTRON_datasets/Handwritten/PhDIndic11_Devanagari/'
+RESULTS_DATA_DIR  = 'results/'
 
 
 ### Keep True if True labels are available, else False
