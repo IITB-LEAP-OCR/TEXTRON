@@ -46,15 +46,20 @@ git submodule update --init --recursive
             - In case ground truth isn't available, set **GROUND_TRUTH_AVAILABLE** within config.py as `False`
        - Choose the appropriate Labeling functions within config.py file from the **lab_funcs** list and also set the respective quality quide for CAGE
 
+### For Training
+
+1. Set the PREDS_ONLY flag to False in config.py along with the appropriate parameters as per the config.py file
+2. Run the `main.py` code to get the predictions in the _results_ folder (outside the main project directory) defined in config.py
+
 ### For Inference
 
 1. Download the pickle file for LF parameters from [here](https://github.com/IITB-LEAP-OCR/TEXTRON/releases/tag/parameters) and add it in the directory as per the config.py file
 2. Run the `main.py` code to get the predictions in the _results_ folder (outside the main project directory) defined in config.py
 
-### For Training
+### For Very Fast Inference
 
-1. Set the PREDS_ONLY flag to False in config.py along with the appropriate parameters as per the config.py file
-2. Run the `main.py` code to get the predictions in the _results_ folder (outside the main project directory) defined in config.py
+1. Run the `fast_inference.py` code to get the predictions in the _results_ folder (outside the main project directory) defined in config.py
+2. It uses cage-predictions mapping with the existing CAGE model to generate predictions for the input image without internally using weak-supervision to aggregate weak labels
 
 
 ## Methodology
